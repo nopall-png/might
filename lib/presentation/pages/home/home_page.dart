@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wmp/presentation/pages/swipe/swipe_page.dart';
+import 'package:wmp/presentation/pages/chat/chat_room_page.dart';
+import 'package:wmp/presentation/pages/profile/profile_self_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -26,7 +28,7 @@ class HomePage extends StatelessWidget {
               // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                child: _buildHeader(),
+                child: _buildHeader(context),
               ),
 
               // SWIPE AREA
@@ -37,10 +39,10 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              // BOTTOM BUTTONS
+              // ✅ BOTTOM BUTTONS (NOW WITH CONTEXT)
               Padding(
                 padding: const EdgeInsets.only(bottom: 30),
-                child: _buildBottomButtons(),
+                child: _buildBottomButtons(context),
               ),
             ],
           ),
@@ -49,18 +51,58 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // ✅ HEADER
-  Widget _buildHeader() {
+  // ✅ HEADER (MESSAGE ICON TANPA NAVIGASI)
+  Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            _iconButton('assets/icons/profile.svg'),
+            // ✅ PROFILE BUTTON (NAVIGATE TO PROFILE PAGE)
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileSelfPage()),
+                );
+              },
+              child: _iconButton('assets/icons/profile.svg'),
+            ),
+
             const SizedBox(width: 12),
+
+            // ✅ SETTINGS (NO NAVIGATION YET)
             _iconButton('assets/icons/settings.svg'),
+            const SizedBox(width: 12),
+
+            // ✅ MESSAGE ICON (NO NAVIGATION)
+            Stack(
+              children: [
+                _iconButton('assets/icons/msg.svg'),
+                Positioned(
+                  right: 0,
+                  top: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CFF7A),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Text(
+                      '3',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+
         Image.asset('assets/images/logo1.png', height: 64),
       ],
     );
@@ -87,14 +129,27 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // ✅ BOTTOM BUTTONS
-  Widget _buildBottomButtons() {
+  // ✅ BOTTOM BUTTONS (FIXED)
+  Widget _buildBottomButtons(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _svgButton('assets/icons/cancle.svg', const Color(0xFFFF6C6C)),
         const SizedBox(width: 24),
-        _svgButton('assets/icons/msg.svg', const Color(0xFFA96CFF)),
+
+        // ✅ OPEN CHAT ROOM
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ChatRoomPage(fighterName: 'Messages'),
+              ),
+            );
+          },
+          child: _svgButton('assets/icons/msg.svg', const Color(0xFFA96CFF)),
+        ),
+
         const SizedBox(width: 24),
 
         // FIGHT BUTTON
