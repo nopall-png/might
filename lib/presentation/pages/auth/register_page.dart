@@ -1,0 +1,435 @@
+import 'package:flutter/material.dart';
+import 'package:wmp/presentation/pages/profile/create_profile_page.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _acceptTerms = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF2B164A), Color(0xFF7A3FFF)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _backHeader(context),
+
+                const SizedBox(height: 20),
+                // LOGO MEET & FIGHT (sama kayak di Login)
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 180,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFF7A3FFF),
+                      child: const Icon(
+                        Icons.sports_martial_arts,
+                        size: 90,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // CREATE ACCOUNT CARD
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.fromLTRB(28, 36, 28, 32),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFA96CFF), Color(0xFF7A3FFF)],
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: const Color(0xFFF4EFFF),
+                      width: 4,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0xFF4C2C82), offset: Offset(8, 8)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'CREATE ACCOUNT',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Press Start 2P',
+                          fontSize: 18,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Join the fighter community',
+                        style: TextStyle(
+                          color: Color(0xFFF4EFFF),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // FORM FIELDS
+                      _buildField(
+                        'Fighter Name',
+                        Icons.person_outline,
+                        _nameController,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildField(
+                        'Email Address',
+                        Icons.email_outlined,
+                        _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildField(
+                        'Password',
+                        Icons.lock_outline,
+                        _passwordController,
+                        isPassword: true,
+                        obscureText: _obscurePassword,
+                        onToggle: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildField(
+                        'Confirm Password',
+                        Icons.lock_outline,
+                        _confirmPasswordController,
+                        isPassword: true,
+                        obscureText: _obscureConfirm,
+                        onToggle: () {
+                          setState(() => _obscureConfirm = !_obscureConfirm);
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // TERMS CHECKBOX
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _acceptTerms,
+                              onChanged: (v) =>
+                                  setState(() => _acceptTerms = v!),
+                              activeColor: const Color(0xFFAFFF8B),
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: RichText(
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  color: Color(0xFFF4EFFF),
+                                  fontSize: 13,
+                                ),
+                                children: [
+                                  TextSpan(text: 'I accept the '),
+                                  TextSpan(
+                                    text: 'Terms & Conditions',
+                                    style: TextStyle(
+                                      color: Color(0xFFAFFF8B),
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  TextSpan(text: ' and '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    style: TextStyle(
+                                      color: Color(0xFFAFFF8B),
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // CREATE ACCOUNT BUTTON
+                      GestureDetector(
+                        onTap: () {
+                          if (!_acceptTerms) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Please accept the Terms first"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateProfileScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          height: 62,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white30, width: 3),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFF4C2C82),
+                                offset: Offset(4, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'CREATE ACCOUNT',
+                              style: TextStyle(
+                                fontFamily: 'Press Start 2P',
+                                fontSize: 14,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 50),
+
+                // FEATURE CARDS (persis mockup)
+                _featureCard(
+                  '🥊',
+                  'FIND PARTNERS',
+                  'Connect with fighters nearby who match your style and level',
+                  [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+                ),
+                SizedBox(height: 16),
+                _featureCard(
+                  '🏆',
+                  'TRACK PROGRESS',
+                  'Earn achievements, level up, and become a champion',
+                  [Color(0xFFA96CFF), Color(0xFFFF7CFD)],
+                ),
+                SizedBox(height: 16),
+                _featureCard(
+                  '💪',
+                  'BUILD COMMUNITY',
+                  'Join a supportive community of martial artists',
+                  [Color(0xFFFF7CFD), Color(0xFF7A3FFF)],
+                ),
+
+                const SizedBox(height: 50),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _backHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 71,
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment(0.50, 0.00),
+          end: Alignment(0.50, 1.00),
+          colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+        ),
+        boxShadow: const [
+          BoxShadow(color: Color(0xFF4C2C82), offset: Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Color(0xFFF4EFFF),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: const [
+                  BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                ],
+              ),
+              child: const Icon(Icons.arrow_back, color: Color(0xFF2B164A)),
+            ),
+          ),
+          const Text(
+            'REGISTER',
+            style: TextStyle(
+              color: Color(0xFFF9F8FF),
+              fontSize: 14,
+              fontFamily: 'Press Start 2P',
+              letterSpacing: 0.7,
+            ),
+          ),
+          const SizedBox(width: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField(
+    String hint,
+    IconData icon,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onToggle,
+  }) {
+    return Container(
+      height: 62,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF4EFFF), width: 3),
+        boxShadow: const [
+          BoxShadow(color: Color(0xFF4C2C82), offset: Offset(4, 4)),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.black87, fontSize: 16),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: const Color(0xFF7A3FFF), size: 24),
+          hintText: hint,
+          hintStyle: const TextStyle(color: Color(0xFFB6A9D7)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    obscureText ? Icons.visibility_off : Icons.visibility,
+                    color: const Color(0xFF7A3FFF),
+                  ),
+                  onPressed: onToggle,
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _featureCard(
+    String emoji,
+    String title,
+    String description,
+    List<Color> gradient,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradient),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(0xFFF4EFFF), width: 3),
+        boxShadow: const [
+          BoxShadow(color: Color(0xFF4C2C82), offset: Offset(4, 4)),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 40)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Press Start 2P',
+                    fontSize: 13,
+                    color: Colors.white,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFFF4EFFF),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
