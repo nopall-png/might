@@ -5,7 +5,11 @@ class Fighter {
   final String bio;
   final String imagePath;
   final String experience;
-  final double distance; // dalam KM
+  final double distance;
+  final String match;
+  final String weight;
+  final String height;
+  final String lastMatch;
 
   Fighter({
     required this.name,
@@ -15,5 +19,9 @@ class Fighter {
     required this.imagePath,
     required this.experience,
     required this.distance,
+    required this.match,
+    required this.weight,
+    required this.height,
+    required this.lastMatch,
   });
 }

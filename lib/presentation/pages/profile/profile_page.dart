@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/data/models/fighter_model.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfilePage extends StatelessWidget {
   final Fighter fighter;
@@ -19,39 +20,26 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ✅ HEADER
+              // ✅ 1. HEADER
               _buildHeader(context),
 
               const SizedBox(height: 24),
 
-              // ✅ PROFILE CARD
+              // ✅ 2. PROFILE
               _buildProfileCard(cardWidth),
 
               const SizedBox(height: 24),
 
-              // ✅ STATISTICS
-              _buildStatistics(),
+              _buildExperienceLevel(),
 
               const SizedBox(height: 24),
 
-              // ✅ EXPERIENCE LEVEL
-              _buildSection(
-                title: 'EXPERIENCE LEVEL',
-                child: Center(
-                  child: Text(
-                    fighter.experience.toUpperCase(),
-                    style: const TextStyle(
-                      fontFamily: 'Press Start 2P',
-                      fontSize: 14,
-                      color: Color(0xFF1F1A2E),
-                    ),
-                  ),
-                ),
-              ),
+              // ✅ 4. STATISTICS
+              _buildStatisticsSection(),
 
               const SizedBox(height: 24),
 
-              // ✅ ABOUT ME
+              // ✅ 5. ABOUT ME
               _buildSection(
                 title: 'ABOUT ME',
                 child: Text(
@@ -65,26 +53,9 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
-
-              // ✅ MAIN STYLE
-              _buildSection(
-                title: 'MAIN STYLE',
-                child: Center(
-                  child: Text(
-                    fighter.martialArt.toUpperCase(),
-                    style: const TextStyle(
-                      fontFamily: 'Press Start 2P',
-                      fontSize: 16,
-                      color: Color(0xFF1F1A2E),
-                    ),
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 32),
 
-              // ✅ CHALLENGE BUTTON (OPTIONAL)
+              // ✅ CHALLENGE BUTTON
               _buildChallengeButton(),
             ],
           ),
@@ -174,13 +145,25 @@ class ProfilePage extends StatelessWidget {
 
           // Age
           Text(
-            '${fighter.age} years old • Male',
+            '${fighter.age} years old',
             style: const TextStyle(fontSize: 14, color: Color(0xFFB6A9D7)),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Martial Art
+          Text(
+            fighter.martialArt.toUpperCase(),
+            style: const TextStyle(
+              fontFamily: 'Press Start 2P',
+              fontSize: 14,
+              color: Color(0xFF1F1A2E),
+            ),
           ),
 
           const SizedBox(height: 16),
 
-          // Location
+          // Distance
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -199,13 +182,20 @@ class ProfilePage extends StatelessWidget {
   }
 
   // ✅ STATISTICS
-  Widget _buildStatistics() {
+  Widget _buildStatisticsSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
+      width: double.infinity,
+      height: 272,
+      padding: const EdgeInsets.only(top: 27, left: 27, right: 27, bottom: 3),
+      decoration: ShapeDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF7A3FFF), width: 3),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(width: 3, color: Color(0xFF7A3FFF)),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        shadows: const [
+          BoxShadow(color: Color(0xFFE5D5FF), offset: Offset(0, 8)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,48 +203,265 @@ class ProfilePage extends StatelessWidget {
           const Text(
             'STATISTICS',
             style: TextStyle(
-              fontFamily: 'Press Start 2P',
-              fontSize: 14,
               color: Color(0xFF1F1A2E),
+              fontSize: 14,
+              fontFamily: 'Press Start 2P',
+              letterSpacing: 0.7,
+              height: 1.4,
             ),
           ),
+
           const SizedBox(height: 16),
 
-          // Total Matches
+          // ===========================
+          // ⭐ TOTAL MATCHES CARD
+          // ===========================
           Container(
-            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 84),
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Color(0xFF5CFF85), width: 2),
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(width: 2, color: Color(0xFF5CFF85)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              shadows: const [
+                BoxShadow(color: Color(0xFF4C2C82), offset: Offset(0, 4)),
+              ],
             ),
-            child: const Text(
-              '12 Matches',
-              style: TextStyle(
-                fontFamily: 'Press Start 2P',
-                fontSize: 14,
-                color: Color(0xFFF5EFFF),
-              ),
+            child: Row(
+              children: [
+                // ICON — kosong dulu
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: ShapeDecoration(
+                    color: const Color(0xFF5CFF85),
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(color: Colors.white, width: 2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      "assets/icons/matches.svg",
+                      width: 26,
+                      height: 26,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // TEXT
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Total Matches',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Arial',
+                        color: Color(0xFFF5EFFF),
+                      ),
+                    ),
+                    Text(
+                      '${fighter.match} .',
+                      style: const TextStyle(
+                        fontFamily: 'Press Start 2P',
+                        fontSize: 14,
+                        color: Color(0xFFF5EFFF),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
 
           const SizedBox(height: 16),
 
-          // Recent Match
+          // ===========================
+          // ⭐ RECENT MATCH
+          // ===========================
+          Container(
+            height: 84,
+            padding: const EdgeInsets.all(18),
+            decoration: ShapeDecoration(
+              color: const Color(0xFFF5EFFF),
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(width: 2, color: Color(0xFF7A3FFF)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              shadows: const [
+                BoxShadow(color: Color(0xFFE5D5FF), offset: Offset(0, 4)),
+              ],
+            ),
+            child: Row(
+              children: [
+                // ICON — kosong dulu
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: ShapeDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(width: 2, color: Colors.white),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      "assets/icons/recent.svg",
+                      width: 26,
+                      height: 26,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Recent Match',
+                      style: TextStyle(
+                        fontFamily: 'Arial',
+                        color: Color(0xFFB6A9D7),
+                        fontSize: 14,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        // Avatar mini (placeholder)
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                            border: Border.all(
+                              color: Color(0xFF7A3FFF),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          fighter.lastMatch,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF1F1A2E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Small info box
+  Widget _infoBox(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5EFFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(0xFF7A3FFF), width: 2),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF7A3FFF)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, color: Color(0xFF1F1A2E)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExperienceLevel() {
+    return Container(
+      width: double.infinity,
+      height: 144,
+      padding: const EdgeInsets.only(top: 27, left: 27, right: 27, bottom: 3),
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(width: 3, color: Color(0xFF7A3FFF)),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        shadows: const [
+          BoxShadow(color: Color(0xFFE5D5FF), offset: Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'EXPERIENCE LEVEL',
+            style: TextStyle(
+              color: Color(0xFF1F1A2E),
+              fontSize: 14,
+              fontFamily: 'Press Start 2P',
+              letterSpacing: 0.7,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 🌈 Gradient Box
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5EFFF),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Color(0xFF7A3FFF), width: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 12),
+            decoration: ShapeDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(width: 3, color: Color(0xFF5CFF85)),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              shadows: const [
+                BoxShadow(color: Color(0x665CFF85), blurRadius: 20),
+                BoxShadow(color: Color(0xFF4C2C82), offset: Offset(0, 4)),
+              ],
             ),
-            child: const Text(
-              'Fought with Alex',
-              style: TextStyle(fontSize: 16, color: Color(0xFF1F1A2E)),
+
+            // ⭐ LEVEL TEXT
+            child: Text(
+              fighter.experience,
+              style: const TextStyle(
+                fontFamily: 'Press Start 2P',
+                fontSize: 14,
+                height: 1.4,
+                letterSpacing: 0.7,
+                color: Color(0xFFF5EFFF),
+              ),
             ),
           ),
         ],
@@ -293,7 +500,7 @@ class ProfilePage extends StatelessWidget {
   Widget _buildChallengeButton() {
     return GestureDetector(
       onTap: () {
-        // TODO: Open Match Popup
+        // TODO: OPEN MATCH POPUP
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
