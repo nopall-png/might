@@ -1,6 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 13+ notification permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Network access for Firebase/HTTP requests -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- For Android <= 12 to read images from gallery -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Read images from media store (Android 13+) for image_picker -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Optional: camera access when using ImageSource.camera -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
-        android:label="wmp"
+        android:label="might"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

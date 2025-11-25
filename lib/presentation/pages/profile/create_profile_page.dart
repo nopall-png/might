@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/onboarding/welcome_arena_screen.dart';
+import 'package:wmp/data/services/auth_service.dart';
+import 'package:wmp/data/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateProfileScreen extends StatefulWidget {
   const CreateProfileScreen({super.key});
@@ -418,7 +421,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
                 const SizedBox(height: 32),
 
-                // SAVE & CONTINUE BUTTON → LANGSUNG KE WELCOME ARENA
+                // SAVE & CONTINUE BUTTON → SIMPAN KE FIRESTORE LALU KE WELCOME ARENA
                 GestureDetector(
                   onTap: () async {
                     // VALIDASI SEDERHANA (biar nggak kosong)
@@ -449,13 +452,39 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       ),
                     );
 
-                    // Simulasi save ke database (nanti ganti pake Firebase)
-                    await Future.delayed(const Duration(seconds: 2));
+                    try {
+                      final uid = AuthService.instance.currentUser?.uid;
+                      if (uid == null) {
+                        throw Exception('User belum login');
+                      }
+
+                      await FirestoreService.instance.updateUserProfile(uid, {
+                        'displayName': _nameController.text.trim(),
+                        'martialArt': selectedStyle,
+                        'weightKg': int.tryParse(_weightController.text.trim()),
+                        'heightCm': int.tryParse(_heightController.text.trim()),
+                        'age': int.tryParse(_ageController.text.trim()),
+                        'gender': selectedGender,
+                        'location': _locationController.text.trim(),
+                        'experience': selectedLevel,
+                        'about': _aboutController.text.trim(),
+                        'updatedAt': FieldValue.serverTimestamp(),
+                      });
+                    } catch (e) {
+                      if (mounted) Navigator.pop(context); // tutup loader
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.redAccent,
+                          content: Text('Gagal menyimpan profil: ${e.toString()}'),
+                        ),
+                      );
+                      return;
+                    }
 
                     // Tutup loading
                     if (mounted) Navigator.pop(context);
 
-                    // LANGSUNG KE WELCOME ARENA SCREEN
+                    // KE WELCOME ARENA SCREEN
                     if (mounted) {
                       Navigator.pushReplacement(
                         context,

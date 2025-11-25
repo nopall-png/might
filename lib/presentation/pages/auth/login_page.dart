@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/auth/register_page.dart';
+import 'package:wmp/data/services/auth_service.dart';
+import 'package:wmp/presentation/pages/home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -119,10 +122,36 @@ class _LoginPageState extends State<LoginPage> {
 
                       // LOGIN BUTTON
                       GestureDetector(
-                        onTap: () {
-                          // TODO: Login logic
-                          print('Login tapped');
-                        },
+                        onTap: _loading
+                            ? null
+                            : () async {
+                                final email = _emailController.text.trim();
+                                final password = _passwordController.text.trim();
+
+                                if (email.isEmpty || password.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Email dan password wajib diisi')),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _loading = true);
+                                try {
+                                  await AuthService.instance.signIn(email: email, password: password);
+                                  if (context.mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const HomePage()),
+                                    );
+                                  }
+                                } on Exception catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Login gagal: ${e.toString()}')),
+                                  );
+                                } finally {
+                                  if (mounted) setState(() => _loading = false);
+                                }
+                              },
                         child: Container(
                           height: 62,
                           decoration: BoxDecoration(
@@ -140,16 +169,25 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Text(
-                              'LOGIN',
-                              style: TextStyle(
-                                color: Color(0xFFF9F8FF),
-                                fontSize: 16,
-                                fontFamily: 'Press Start 2P',
-                                letterSpacing: 1,
-                              ),
-                            ),
+                          child: Center(
+                            child: _loading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'LOGIN',
+                                    style: TextStyle(
+                                      color: Color(0xFFF9F8FF),
+                                      fontSize: 16,
+                                      fontFamily: 'Press Start 2P',
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

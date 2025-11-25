@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../onboarding/onboarding_page1.dart';
+import '../home/home_page.dart';
+import 'package:wmp/data/services/auth_service.dart';
+import 'package:wmp/data/services/matches_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,14 +26,19 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 900),
     )..repeat();
 
-    // pindah ke onboarding setelah 2 detik
-    Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingPage1()),
-        );
+    // pindah sesuai status login setelah 2 detik
+    Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      final isLoggedIn = AuthService.instance.currentUser != null;
+      // Start matches notifications when logged in
+      if (isLoggedIn) {
+        final uid = AuthService.instance.currentUser!.uid;
+        await MatchesNotificationService.instance.startListening(uid);
       }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => isLoggedIn ? const HomePage() : const OnboardingPage1()),
+      );
     });
   }
 

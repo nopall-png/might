@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/profile/create_profile_page.dart';
+import 'package:wmp/data/services/auth_service.dart';
+import 'package:wmp/data/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _acceptTerms = false;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -203,23 +207,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // CREATE ACCOUNT BUTTON
                       GestureDetector(
-                        onTap: () {
-                          if (!_acceptTerms) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please accept the Terms first"),
-                              ),
-                            );
-                            return;
-                          }
+                        onTap: _loading
+                            ? null
+                            : () async {
+                                final name = _nameController.text.trim();
+                                final email = _emailController.text.trim();
+                                final password = _passwordController.text.trim();
+                                final confirm = _confirmPasswordController.text.trim();
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CreateProfileScreen(),
-                            ),
-                          );
-                        },
+                                if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Semua field wajib diisi')),
+                                  );
+                                  return;
+                                }
+                                if (password != confirm) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Konfirmasi password tidak cocok')),
+                                  );
+                                  return;
+                                }
+                                if (!_acceptTerms) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Harap setujui Terms terlebih dahulu')),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _loading = true);
+                                try {
+                                  final cred = await AuthService.instance.signUp(email: email, password: password);
+                                  final uid = cred.user!.uid;
+
+                                  await FirestoreService.instance.createUserProfile(uid, {
+                                    'displayName': name,
+                                    'email': email,
+                                    'createdAt': FieldValue.serverTimestamp(),
+                                  });
+
+                                  if (context.mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const CreateProfileScreen()),
+                                    );
+                                  }
+                                } on Exception catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Registrasi gagal: ${e.toString()}')),
+                                  );
+                                } finally {
+                                  if (mounted) setState(() => _loading = false);
+                                }
+                              },
                         child: Container(
                           height: 62,
                           width: double.infinity,
@@ -236,16 +275,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Text(
-                              'CREATE ACCOUNT',
-                              style: TextStyle(
-                                fontFamily: 'Press Start 2P',
-                                fontSize: 14,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
+                          child: Center(
+                            child: _loading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'CREATE ACCOUNT',
+                                    style: TextStyle(
+                                      fontFamily: 'Press Start 2P',
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

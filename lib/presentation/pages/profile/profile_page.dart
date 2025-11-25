@@ -1,67 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/data/models/fighter_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wmp/data/services/auth_service.dart';
+import 'package:wmp/data/services/firestore_service.dart';
 
 class ProfilePage extends StatelessWidget {
   final Fighter fighter;
+  final String? uid; // optional: when provided, read profile realtime from Firestore
 
-  const ProfilePage({super.key, required this.fighter});
+  const ProfilePage({super.key, required this.fighter, this.uid});
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final cardWidth = width - 48;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5EFFF),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // ✅ 1. HEADER
-              _buildHeader(context),
+    Widget buildPage({Map<String, dynamic>? profile}) {
+      final about = (profile?['about'] as String?) ?? fighter.bio;
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5EFFF),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ✅ 1. HEADER
+                _buildHeader(context),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ✅ 2. PROFILE
-              _buildProfileCard(cardWidth),
+                // ✅ 2. PROFILE
+                _buildProfileCard(cardWidth, profile),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              _buildExperienceLevel(),
+                _buildExperienceLevel(profile),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ✅ 4. STATISTICS
-              _buildStatisticsSection(),
+                // ✅ 4. STATISTICS
+                _buildStatisticsSection(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ✅ 5. ABOUT ME
-              _buildSection(
-                title: 'ABOUT ME',
-                child: Text(
-                  fighter.bio,
-                  textAlign: TextAlign.start,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    height: 1.6,
-                    color: Color(0xFF1F1A2E),
+                // ✅ 5. ABOUT ME
+                _buildSection(
+                  title: 'ABOUT ME',
+                  child: Text(
+                    about,
+                    textAlign: TextAlign.start,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      height: 1.6,
+                      color: Color(0xFF1F1A2E),
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // ✅ CHALLENGE BUTTON
-              _buildChallengeButton(),
-            ],
+                // ✅ CHALLENGE BUTTON
+                _buildChallengeButton(context),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    // If uid provided, read realtime from Firestore; otherwise fallback to given fighter
+    if (uid != null) {
+      return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('users').doc(uid!).snapshots(),
+        builder: (context, snapshot) {
+          final profile = snapshot.data?.data();
+          return buildPage(profile: profile);
+        },
+      );
+    }
+
+    return buildPage();
   }
 
   // ✅ HEADER
@@ -104,7 +124,7 @@ class ProfilePage extends StatelessWidget {
   }
 
   // ✅ PROFILE CARD
-  Widget _buildProfileCard(double cardWidth) {
+  Widget _buildProfileCard(double cardWidth, Map<String, dynamic>? profile) {
     return Container(
       width: cardWidth,
       padding: const EdgeInsets.all(24),
@@ -125,7 +145,13 @@ class ProfilePage extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(64),
-              child: Image.network(fighter.imagePath, fit: BoxFit.cover),
+              child: (() {
+                final photoUrl = profile?['photoUrl'] as String?;
+                if (photoUrl != null && photoUrl.isNotEmpty) {
+                  return Image.network(photoUrl, fit: BoxFit.cover);
+                }
+                return Image.asset(fighter.imagePath, fit: BoxFit.cover);
+              })(),
             ),
           ),
 
@@ -133,7 +159,7 @@ class ProfilePage extends StatelessWidget {
 
           // Name
           Text(
-            fighter.name,
+            (profile?['displayName'] as String?) ?? fighter.name,
             style: const TextStyle(
               fontFamily: 'Press Start 2P',
               fontSize: 18,
@@ -145,7 +171,7 @@ class ProfilePage extends StatelessWidget {
 
           // Age
           Text(
-            '${fighter.age} years old',
+            '${(profile?['age'] as int?) ?? fighter.age} years old',
             style: const TextStyle(fontSize: 14, color: Color(0xFFB6A9D7)),
           ),
 
@@ -153,7 +179,7 @@ class ProfilePage extends StatelessWidget {
 
           // Martial Art
           Text(
-            fighter.martialArt.toUpperCase(),
+            ((profile?['martialArt'] as String?) ?? fighter.martialArt).toUpperCase(),
             style: const TextStyle(
               fontFamily: 'Press Start 2P',
               fontSize: 14,
@@ -402,7 +428,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildExperienceLevel() {
+  Widget _buildExperienceLevel(Map<String, dynamic>? profile) {
     return Container(
       width: double.infinity,
       height: 144,
@@ -454,7 +480,7 @@ class ProfilePage extends StatelessWidget {
 
             // ⭐ LEVEL TEXT
             child: Text(
-              fighter.experience,
+              (profile?['experience'] as String?) ?? fighter.experience,
               style: const TextStyle(
                 fontFamily: 'Press Start 2P',
                 fontSize: 14,
@@ -497,10 +523,38 @@ class ProfilePage extends StatelessWidget {
   }
 
   // ✅ CHALLENGE BUTTON
-  Widget _buildChallengeButton() {
+  Widget _buildChallengeButton(BuildContext ctx) {
     return GestureDetector(
       onTap: () {
-        // TODO: OPEN MATCH POPUP
+        final myUid = AuthService.instance.currentUser?.uid;
+        if (myUid == null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(content: Text('Silakan login terlebih dahulu')), 
+          );
+          return;
+        }
+
+        if (uid == null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(content: Text('Uid lawan tidak tersedia. Buka profil dari kartu swipe.')),
+          );
+          return;
+        }
+
+        // Kirim challenge: buat dokumen match yang akan memicu notifikasi pada lawan
+        FirestoreService.instance.createMatch(
+          userIds: [myUid, uid!],
+          opponentName: fighter.name,
+          createdBy: myUid,
+        ).then((_) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(content: Text('Challenge dikirim ke lawan')), 
+          );
+        }).catchError((e) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text('Gagal mengirim challenge: $e')),
+          );
+        });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
