@@ -63,10 +63,17 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Install CocoaPods
+      - name: Install CocoaPods (if Podfile exists)
         run: |
           sudo gem install cocoapods --no-document || true
-          cd ios && pod install --repo-update && cd ..
+          if [ -f ios/Podfile ]; then
+            echo "Podfile found. Installing CocoaPods..."
+            cd ios
+            pod install --repo-update
+            cd ..
+          else
+            echo "No Podfile found in ios directory. Skipping pod install."
+            fi
 
       - name: Import signing certificates & provisioning profile
         uses: apple-actions/import-codesign-certs@v2
