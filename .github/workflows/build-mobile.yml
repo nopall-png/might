@@ -51,6 +51,9 @@ jobs:
   ios:
     if: ${{ inputs.build_ios }}
     runs-on: macos-latest
+    env:
+      IOS_BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,12 +79,12 @@ jobs:
         run: flutter pub get
 
       - name: Optionally override bundle identifier
-        if: ${{ secrets.IOS_BUNDLE_ID != '' }}
-        run: sed -i '' -e "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${{ secrets.IOS_BUNDLE_ID }};/g" ios/Runner.xcodeproj/project.pbxproj
+        if: ${{ env.IOS_BUNDLE_ID != '' }}
+        run: sed -i '' -e "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${{ env.IOS_BUNDLE_ID }};/g" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Optionally set development team for Release
-        if: ${{ secrets.IOS_TEAM_ID != '' }}
-        run: echo "DEVELOPMENT_TEAM=${{ secrets.IOS_TEAM_ID }}" >> ios/Flutter/Release.xcconfig
+        if: ${{ env.IOS_TEAM_ID != '' }}
+        run: echo "DEVELOPMENT_TEAM=${{ env.IOS_TEAM_ID }}" >> ios/Flutter/Release.xcconfig
 
       - name: Build IPA (release)
         env:
