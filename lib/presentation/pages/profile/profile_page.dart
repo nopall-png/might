@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/data/models/fighter_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firebase dihapus
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
 
 class ProfilePage extends StatelessWidget {
   final Fighter fighter;
-  final String? uid; // optional: when provided, read profile realtime from Firestore
+  final String?
+  uid; // optional: when provided, read profile realtime from Firestore
 
   const ProfilePage({super.key, required this.fighter, this.uid});
 
@@ -20,18 +21,14 @@ class ProfilePage extends StatelessWidget {
       final about = (profile?['about'] as String?) ?? fighter.bio;
       return Scaffold(
         backgroundColor: const Color(0xFFF5EFFF),
+        appBar: _buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // ✅ 1. HEADER
-                _buildHeader(context),
-
-                const SizedBox(height: 24),
-
-                // ✅ 2. PROFILE
+                // ✅ PROFILE
                 _buildProfileCard(cardWidth, profile),
 
                 const SizedBox(height: 24),
@@ -40,12 +37,12 @@ class ProfilePage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // ✅ 4. STATISTICS
+                // ✅ STATISTICS
                 _buildStatisticsSection(),
 
                 const SizedBox(height: 24),
 
-                // ✅ 5. ABOUT ME
+                // ✅ ABOUT ME
                 _buildSection(
                   title: 'ABOUT ME',
                   child: Text(
@@ -72,10 +69,10 @@ class ProfilePage extends StatelessWidget {
 
     // If uid provided, read realtime from Firestore; otherwise fallback to given fighter
     if (uid != null) {
-      return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('users').doc(uid!).snapshots(),
+      return StreamBuilder<Map<String, dynamic>?>(
+        stream: FirestoreService.instance.streamUserProfile(uid!),
         builder: (context, snapshot) {
-          final profile = snapshot.data?.data();
+          final profile = snapshot.data;
           return buildPage(profile: profile);
         },
       );
@@ -84,41 +81,50 @@ class ProfilePage extends StatelessWidget {
     return buildPage();
   }
 
-  // ✅ HEADER
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+  // ✅ APP BAR
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(72),
+      child: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5EFFF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.arrow_back, size: 20),
+                  ),
+                ),
+                const Text(
+                  'Your Opponent',
+                  style: TextStyle(
+                    fontFamily: 'Press Start 2P',
+                    fontSize: 14,
+                    color: Color(0xFFF5EFFF),
+                  ),
+                ),
+                const SizedBox(width: 40),
+              ],
+            ),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5EFFF),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.arrow_back, size: 20),
-            ),
-          ),
-          const Text(
-            'Your Opponent',
-            style: TextStyle(
-              fontFamily: 'Press Start 2P',
-              fontSize: 14,
-              color: Color(0xFFF5EFFF),
-            ),
-          ),
-          const SizedBox(width: 40),
-        ],
       ),
     );
   }
@@ -148,7 +154,13 @@ class ProfilePage extends StatelessWidget {
               child: (() {
                 final photoUrl = profile?['photoUrl'] as String?;
                 if (photoUrl != null && photoUrl.isNotEmpty) {
-                  return Image.network(photoUrl, fit: BoxFit.cover);
+                  return Image.network(
+                    photoUrl,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stack) =>
+                        Image.asset(fighter.imagePath, fit: BoxFit.cover),
+                  );
                 }
                 return Image.asset(fighter.imagePath, fit: BoxFit.cover);
               })(),
@@ -179,7 +191,8 @@ class ProfilePage extends StatelessWidget {
 
           // Martial Art
           Text(
-            ((profile?['martialArt'] as String?) ?? fighter.martialArt).toUpperCase(),
+            ((profile?['martialArt'] as String?) ?? fighter.martialArt)
+                .toUpperCase(),
             style: const TextStyle(
               fontFamily: 'Press Start 2P',
               fontSize: 14,
@@ -189,7 +202,7 @@ class ProfilePage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Distance
+          // Location
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -198,7 +211,7 @@ class ProfilePage extends StatelessWidget {
               border: Border.all(color: const Color(0xFF7A3FFF), width: 2),
             ),
             child: Text(
-              '${fighter.distance} km away',
+              (profile?['location'] as String?) ?? fighter.location,
               style: const TextStyle(fontSize: 14, color: Color(0xFF1F1A2E)),
             ),
           ),
@@ -274,7 +287,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   child: Center(
                     child: SvgPicture.asset(
-                      "assets/icons/matches.svg",
+                      "assets/icons/boxing-gloves.svg",
                       width: 26,
                       height: 26,
                     ),
@@ -288,21 +301,46 @@ class ProfilePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Total Matches',
+                      'Total Match',
                       style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Arial',
                         color: Color(0xFFF5EFFF),
                       ),
                     ),
-                    Text(
-                      '${fighter.match} .',
-                      style: const TextStyle(
-                        fontFamily: 'Press Start 2P',
-                        fontSize: 14,
-                        color: Color(0xFFF5EFFF),
+                    // Ketika uid tersedia, ambil total match dari koleksi 'matches'
+                    if (uid == null)
+                      Text(
+                        '${fighter.match} .',
+                        style: const TextStyle(
+                          fontFamily: 'Press Start 2P',
+                          fontSize: 14,
+                          color: Color(0xFFF5EFFF),
+                        ),
+                      )
+                    else
+                      StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: FirestoreService.instance.streamUserMatches(
+                          uid!,
+                        ),
+                        builder: (context, snapshot) {
+                          final list = snapshot.data ?? const [];
+                          final acceptedCount = list
+                              .where(
+                                (m) => (m['status'] as String?) == 'accepted',
+                              )
+                              .length;
+                          final label = '$acceptedCount matches .';
+                          return Text(
+                            label,
+                            style: const TextStyle(
+                              fontFamily: 'Press Start 2P',
+                              fontSize: 14,
+                              color: Color(0xFFF5EFFF),
+                            ),
+                          );
+                        },
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -529,32 +567,39 @@ class ProfilePage extends StatelessWidget {
         final myUid = AuthService.instance.currentUser?.uid;
         if (myUid == null) {
           ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(content: Text('Silakan login terlebih dahulu')), 
+            const SnackBar(content: Text('Silakan login terlebih dahulu')),
           );
           return;
         }
 
         if (uid == null) {
           ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(content: Text('Uid lawan tidak tersedia. Buka profil dari kartu swipe.')),
+            const SnackBar(
+              content: Text(
+                'Uid lawan tidak tersedia. Buka profil dari kartu swipe.',
+              ),
+            ),
           );
           return;
         }
 
         // Kirim challenge: buat dokumen match yang akan memicu notifikasi pada lawan
-        FirestoreService.instance.createMatch(
-          userIds: [myUid, uid!],
-          opponentName: fighter.name,
-          createdBy: myUid,
-        ).then((_) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(content: Text('Challenge dikirim ke lawan')), 
-          );
-        }).catchError((e) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(content: Text('Gagal mengirim challenge: $e')),
-          );
-        });
+        FirestoreService.instance
+            .createMatch(
+              userIds: [myUid, uid!],
+              opponentName: fighter.name,
+              createdBy: myUid,
+            )
+            .then((_) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(content: Text('Challenge dikirim ke lawan')),
+              );
+            })
+            .catchError((e) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                SnackBar(content: Text('Gagal mengirim challenge: $e')),
+              );
+            });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:wmp/presentation/pages/profile/create_profile_page.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Migrated: remove Firebase imports
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -212,48 +213,115 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : () async {
                                 final name = _nameController.text.trim();
                                 final email = _emailController.text.trim();
-                                final password = _passwordController.text.trim();
-                                final confirm = _confirmPasswordController.text.trim();
+                                final password = _passwordController.text
+                                    .trim();
+                                final confirm = _confirmPasswordController.text
+                                    .trim();
 
-                                if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+                                if (name.isEmpty ||
+                                    email.isEmpty ||
+                                    password.isEmpty ||
+                                    confirm.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Semua field wajib diisi')),
+                                    const SnackBar(
+                                      content: Text('Semua field wajib diisi'),
+                                    ),
                                   );
                                   return;
                                 }
                                 if (password != confirm) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Konfirmasi password tidak cocok')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Konfirmasi password tidak cocok',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
                                 if (!_acceptTerms) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Harap setujui Terms terlebih dahulu')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Harap setujui Terms terlebih dahulu',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
 
                                 setState(() => _loading = true);
                                 try {
-                                  final cred = await AuthService.instance.signUp(email: email, password: password);
+                                  // Step 1: Buat akun & sesi (fallback sign-in jika 409)
+                                  final cred = await AuthService.instance
+                                      .signUpOrSignIn(
+                                        email: email,
+                                        password: password,
+                                      );
                                   final uid = cred.user!.uid;
 
-                                  await FirestoreService.instance.createUserProfile(uid, {
-                                    'displayName': name,
-                                    'email': email,
-                                    'createdAt': FieldValue.serverTimestamp(),
-                                  });
+                                  // Step 2: Buat/Update profil user di database
+                                  try {
+                                    await FirestoreService.instance
+                                        .ensureUserProfile(uid, {
+                                          'displayName': name,
+                                          'martialArt': 'unknown',
+                                          'weightKg': 0,
+                                          'heightCm': 0,
+                                          'age': 0,
+                                          'gender': 'unknown',
+                                          'location': 'unknown',
+                                          'experience': 'beginner',
+                                          'about': '',
+                                          'updatedAt': DateTime.now()
+                                              .toIso8601String(),
+                                        });
+                                  } on AppwriteException catch (e) {
+                                    // Detilkan error untuk diagnosa (code/message/response)
+                                    // ignore: avoid_print
+                                    print(
+                                      '[Register] ensureUserProfile error: code=${e.code}, message=${e.message}, response=${e.response}',
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Akun berhasil/sudah ada, tapi gagal membuat/memperbarui profil. Silakan coba lagi.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  } catch (e) {
+                                    // ignore: avoid_print
+                                    print(
+                                      '[Register] ensureUserProfile unexpected error: $e',
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Akun berhasil/sudah ada, tapi gagal membuat/memperbarui profil. Silakan coba lagi.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
 
                                   if (context.mounted) {
                                     Navigator.pushReplacement(
                                       context,
-                                      MaterialPageRoute(builder: (_) => const CreateProfileScreen()),
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const CreateProfileScreen(),
+                                      ),
                                     );
                                   }
                                 } on Exception catch (e) {
+                                  // ignore: avoid_print
+                                  print('[Register] signUp error: $e');
+                                  final msg = e.toString();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Registrasi gagal: ${e.toString()}')),
+                                    SnackBar(
+                                      content: Text('Registrasi gagal: $msg'),
+                                    ),
                                   );
                                 } finally {
                                   if (mounted) setState(() => _loading = false);
@@ -282,7 +350,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     width: 22,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Text(

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:wmp/utils/storage_uploader_stub.dart'
     if (dart.library.io) 'package:wmp/utils/storage_uploader_io.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:wmp/presentation/widgets/avatar_cropper.dart';
+// Firebase imports dihapus, migrasi ke Appwrite
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -36,36 +35,45 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final uid = AuthService.instance.currentUser?.uid;
     _prefillLoading = true;
     if (uid != null) {
-      FirestoreService.instance.getUserProfile(uid).then((data) {
-        if (data == null) return;
-        nameCtrl.text = (data['displayName'] as String?) ?? '';
-        _photoUrl = (data['photoUrl'] as String?);
-        final ageVal = data['age'];
-        if (ageVal is int) {
-          ageCtrl.text = ageVal.toString();
-        } else if (ageVal is String) {
-          ageCtrl.text = ageVal;
-        }
-        gender = (data['gender'] as String?) ?? gender;
-        locationCtrl.text = (data['location'] as String?) ?? '';
-        aboutCtrl.text = (data['about'] as String?) ?? '';
-        experience = (data['experience'] as String?) ?? experience;
-        final weightVal = data['weightKg'];
-        if (weightVal is int) {
-          weightCtrl.text = weightVal.toString();
-        } else if (weightVal is String) {
-          weightCtrl.text = weightVal;
-        }
-        final heightVal = data['heightCm'];
-        if (heightVal is int) {
-          heightCtrl.text = heightVal.toString();
-        } else if (heightVal is String) {
-          heightCtrl.text = heightVal;
-        }
-        if (mounted) setState(() { _prefillLoading = false; });
-      }).catchError((_) {
-        if (mounted) setState(() { _prefillLoading = false; });
-      });
+      FirestoreService.instance
+          .getUserProfile(uid)
+          .then((data) {
+            if (data == null) return;
+            nameCtrl.text = (data['displayName'] as String?) ?? '';
+            _photoUrl = (data['photoUrl'] as String?);
+            final ageVal = data['age'];
+            if (ageVal is int) {
+              ageCtrl.text = ageVal.toString();
+            } else if (ageVal is String) {
+              ageCtrl.text = ageVal;
+            }
+            gender = (data['gender'] as String?) ?? gender;
+            locationCtrl.text = (data['location'] as String?) ?? '';
+            aboutCtrl.text = (data['about'] as String?) ?? '';
+            experience = (data['experience'] as String?) ?? experience;
+            final weightVal = data['weightKg'];
+            if (weightVal is int) {
+              weightCtrl.text = weightVal.toString();
+            } else if (weightVal is String) {
+              weightCtrl.text = weightVal;
+            }
+            final heightVal = data['heightCm'];
+            if (heightVal is int) {
+              heightCtrl.text = heightVal.toString();
+            } else if (heightVal is String) {
+              heightCtrl.text = heightVal;
+            }
+            if (mounted)
+              setState(() {
+                _prefillLoading = false;
+              });
+          })
+          .catchError((_) {
+            if (mounted)
+              setState(() {
+                _prefillLoading = false;
+              });
+          });
     } else {
       _prefillLoading = false;
     }
@@ -182,33 +190,53 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   border: Border.all(color: const Color(0xFF7A3FFF), width: 4),
                   borderRadius: BorderRadius.circular(64),
                 ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(64),
-                child: (_photoUrl != null && _photoUrl!.isNotEmpty)
-                    ? Image.network(_photoUrl!, fit: BoxFit.cover)
-                    : Image.asset('assets/images/dummyimage.jpg', fit: BoxFit.cover),
-              ),
-            ),
-            Positioned(
-              bottom: -6,
-              right: -6,
-              child: GestureDetector(
-                onTap: _pickAndUploadPhoto,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7A3FFF),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: const [BoxShadow(color: Color(0xFF4C2C82), offset: Offset(2, 2))],
-                  ),
-                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(64),
+                  child: (_photoUrl != null && _photoUrl!.isNotEmpty)
+                      ? Image.network(
+                          _photoUrl!,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          errorBuilder: (context, error, stack) => Image.asset(
+                            'assets/images/dummyimage.jpg',
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/images/dummyimage.jpg',
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
-            ),
-          ],
-        ),
+              Positioned(
+                bottom: -6,
+                right: -6,
+                child: GestureDetector(
+                  onTap: _pickAndUploadPhoto,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7A3FFF),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0xFF4C2C82),
+                          offset: Offset(2, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
 
           const SizedBox(height: 20),
 
@@ -218,19 +246,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           Row(
             children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _label('Age'),
-                _input(ageCtrl, keyboardType: TextInputType.number),
-              ])),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _label('Gender'),
-                _dropdown(
-                  value: gender,
-                  items: const ['Male', 'Female', 'Other'],
-                  onChanged: (v) => setState(() => gender = v ?? gender),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _label('Age'),
+                    _input(ageCtrl, keyboardType: TextInputType.number),
+                  ],
                 ),
-              ])),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _label('Gender'),
+                    _dropdown(
+                      value: gender,
+                      items: const ['Male', 'Female', 'Other'],
+                      onChanged: (v) => setState(() => gender = v ?? gender),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
 
@@ -246,43 +284,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final uid = AuthService.instance.currentUser?.uid;
     if (uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap login untuk mengubah foto')), 
+        const SnackBar(content: Text('Harap login untuk mengubah foto')),
       );
       return;
     }
 
     try {
       final picker = ImagePicker();
-      final XFile? file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      final XFile? file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
       if (file == null) return;
 
       setState(() => _uploadingPhoto = true);
 
-      // Use explicit storage bucket from initialized Firebase app when available
-      final bucket = Firebase.app().options.storageBucket;
-      final storage = (bucket != null)
-          ? FirebaseStorage.instanceFor(bucket: bucket)
-          : FirebaseStorage.instance;
-      final url = await uploadUserPhoto(storage: storage, xfile: file, uid: uid);
+      // Baca bytes, tampilkan cropper UI, kemudian upload hasil crop
+      final originalBytes = await file.readAsBytes();
+      final croppedBytes = await showAvatarCropper(context, originalBytes);
+      final toUpload = croppedBytes ?? originalBytes;
+      final url = await uploadUserPhotoBytes(bytes: toUpload, uid: uid);
       await FirestoreService.instance.updateUserProfile(uid, {
         'photoUrl': url,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': DateTime.now().toIso8601String(),
       });
 
       if (mounted) {
         setState(() => _photoUrl = url);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto profil diperbarui')), 
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Foto profil diperbarui')));
       }
-    } on FirebaseException catch (e) {
-      final msg = '[${e.plugin}/${e.code}] ${e.message ?? 'Unknown error'}';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal upload foto: $msg')), 
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal upload foto: ${e.toString()}')), 
+        SnackBar(content: Text('Gagal upload foto: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -391,13 +426,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Weight', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      const Text(
+                        'Weight',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: weightCtrl,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                        decoration: const InputDecoration(border: InputBorder.none),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
                       ),
                     ],
                   ),
@@ -424,13 +467,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Height', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      const Text(
+                        'Height',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: heightCtrl,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                        decoration: const InputDecoration(border: InputBorder.none),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
                       ),
                     ],
                   ),
@@ -454,13 +505,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
         final height = int.tryParse(heightCtrl.text.trim());
         if (name.isEmpty || loc.isEmpty || age == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nama, usia, dan lokasi wajib diisi dengan benar')), 
+            const SnackBar(
+              content: Text('Nama, usia, dan lokasi wajib diisi dengan benar'),
+            ),
           );
           return;
         }
         if (weight == null || height == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Berat dan tinggi harus berupa angka')), 
+            const SnackBar(
+              content: Text('Berat dan tinggi harus berupa angka'),
+            ),
           );
           return;
         }
@@ -468,7 +523,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         final uid = AuthService.instance.currentUser?.uid;
         if (uid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tidak ada user yang login')), 
+            const SnackBar(content: Text('Tidak ada user yang login')),
           );
           return;
         }
@@ -477,7 +532,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           context: context,
           barrierDismissible: false,
           builder: (_) => const Center(
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 4),
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 4,
+            ),
           ),
         );
         try {
@@ -490,18 +548,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
             'experience': experience,
             'weightKg': weight,
             'heightCm': height,
-            'updatedAt': FieldValue.serverTimestamp(),
+            'updatedAt': DateTime.now().toIso8601String(),
           });
 
           if (mounted) Navigator.pop(context); // close loader
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated')), 
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Profile updated')));
           Navigator.pop(context);
         } catch (e) {
           if (mounted) Navigator.pop(context); // close loader
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal update profil: ${e.toString()}')), 
+            SnackBar(content: Text('Gagal update profil: ${e.toString()}')),
           );
         }
       },
@@ -509,7 +567,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         padding: const EdgeInsets.symmetric(vertical: 18),
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)]),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
+          ),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white, width: 2),
         ),
@@ -531,7 +591,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text, style: const TextStyle(color: Color(0xFF7A3FFF), fontSize: 12)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Color(0xFF7A3FFF), fontSize: 12),
+      ),
     );
   }
 
@@ -555,7 +618,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _input(TextEditingController controller, {TextInputType? keyboardType}) {
+  Widget _input(
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -564,7 +630,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _dropdown({required String value, required List<String> items, required ValueChanged<String?> onChanged}) {
+  Widget _dropdown({
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF5EFFF),
@@ -577,7 +647,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
           value: value,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down),
-          items: items.map((e) => DropdownMenuItem<String>(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/onboarding/welcome_arena_screen.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Migrated: remove Firebase imports
+import 'package:wmp/utils/storage_uploader_stub.dart'
+    if (dart.library.io) 'package:wmp/utils/storage_uploader_io.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:wmp/presentation/widgets/avatar_cropper.dart';
 
 class CreateProfileScreen extends StatefulWidget {
   const CreateProfileScreen({super.key});
@@ -18,6 +22,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _ageController = TextEditingController();
   final _locationController = TextEditingController();
   final _aboutController = TextEditingController();
+
+  String? _photoUrl;
+  bool _uploadingPhoto = false;
 
   String? selectedStyle;
   String? selectedGender;
@@ -91,52 +98,78 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    Container(
-                      width: 128,
-                      height: 128,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: const Color(0xFFF4EFFF),
-                          width: 4,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0xFF4C2C82),
-                            offset: Offset(8, 8),
+                    GestureDetector(
+                      onTap: _pickAndUploadPhoto,
+                      child: Container(
+                        width: 128,
+                        height: 128,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 48,
-                        color: Colors.white70,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: const Color(0xFFF4EFFF),
+                            width: 4,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(8, 8),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _uploadingPhoto
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 4,
+                                ),
+                              )
+                            : (_photoUrl != null && _photoUrl!.isNotEmpty)
+                            ? Image.network(
+                                _photoUrl!,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (context, error, stack) =>
+                                    const Icon(
+                                      Icons.camera_alt,
+                                      size: 48,
+                                      color: Colors.white70,
+                                    ),
+                              )
+                            : const Icon(
+                                Icons.camera_alt,
+                                size: 48,
+                                color: Colors.white70,
+                              ),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF7CFD),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0xFF4C2C82),
-                              offset: Offset(4, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.black,
-                          size: 28,
+                      child: GestureDetector(
+                        onTap: _pickAndUploadPhoto,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF7CFD),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFF4C2C82),
+                                offset: Offset(4, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.black,
+                            size: 28,
+                          ),
                         ),
                       ),
                     ),
@@ -468,14 +501,18 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         'location': _locationController.text.trim(),
                         'experience': selectedLevel,
                         'about': _aboutController.text.trim(),
-                        'updatedAt': FieldValue.serverTimestamp(),
+                        if (_photoUrl != null && _photoUrl!.isNotEmpty)
+                          'photoUrl': _photoUrl,
+                        'updatedAt': DateTime.now().toIso8601String(),
                       });
                     } catch (e) {
                       if (mounted) Navigator.pop(context); // tutup loader
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: Colors.redAccent,
-                          content: Text('Gagal menyimpan profil: ${e.toString()}'),
+                          content: Text(
+                            'Gagal menyimpan profil: ${e.toString()}',
+                          ),
                         ),
                       );
                       return;
@@ -646,5 +683,47 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         style: TextStyle(color: const Color(0xFFF4EFFF), fontSize: fontSize),
       ),
     );
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    if (_uploadingPhoto) return;
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text('Belum login — tidak bisa unggah foto.'),
+        ),
+      );
+      return;
+    }
+    final picker = ImagePicker();
+    try {
+      final XFile? file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+      setState(() => _uploadingPhoto = true);
+      final originalBytes = await file.readAsBytes();
+      final croppedBytes = await showAvatarCropper(context, originalBytes);
+      final toUpload = croppedBytes ?? originalBytes;
+      final url = await uploadUserPhotoBytes(bytes: toUpload, uid: uid);
+      // Simpan ke state dan (opsional) langsung update profil agar tersimpan
+      setState(() => _photoUrl = url);
+      await FirestoreService.instance.updateUserProfile(uid, {
+        'photoUrl': url,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text('Gagal upload foto: ${e.toString()}'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 }

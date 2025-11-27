@@ -124,6 +124,7 @@ class SettingsPage extends StatelessWidget {
                                   imagePath: 'assets/images/dummyimage.jpg',
                                   experience: 'beginner',
                                   distance: 0.0,
+                                  location: '-',
                                   match: '0 matches',
                                   weight: '—',
                                   height: '—',

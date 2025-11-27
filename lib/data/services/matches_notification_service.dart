@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:wmp/data/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MatchesNotificationService {
   MatchesNotificationService._();
   static final instance = MatchesNotificationService._();
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
+  StreamSubscription<List<Map<String, dynamic>>>? _sub;
+  final Map<String, Map<String, dynamic>> _last = {};
   bool _initialized = false;
 
   Future<void> initialize() async {
@@ -40,24 +40,29 @@ class MatchesNotificationService {
     await initialize();
     await _sub?.cancel();
 
-    _sub = FirestoreService.instance.streamUserMatches(uid).listen((snapshot) {
-      for (final change in snapshot.docChanges) {
-        final data = change.doc.data() ?? {};
+    _sub = FirestoreService.instance.streamUserMatches(uid).listen((items) {
+      // Build map by id for diffing
+      final current = <String, Map<String, dynamic>>{};
+      for (final data in items) {
+        final id = (data['id'] as String?) ?? '';
+        if (id.isEmpty) continue;
+        current[id] = data;
         final opponentName = (data['opponentName'] as String?) ?? (data['opponent'] as String?) ?? 'Unknown';
         final createdBy = data['createdBy'] as String?;
         final status = data['status'] as String?;
 
-        if (change.type == DocumentChangeType.added) {
-          // Notify challenged user (not the creator) that a new challenge arrived
+        if (!_last.containsKey(id)) {
+          // Added
           if (createdBy != null && createdBy != uid) {
             _showNotification(title: 'New Challenge', body: 'Challenge from ${opponentName}');
           } else {
-            // creator sees "sent" confirmation via UI; optionally notify
             _showNotification(title: 'Challenge Sent', body: 'Waiting for ${opponentName}');
           }
-        } else if (change.type == DocumentChangeType.modified) {
-          // Notify the creator when the status changes
-          if (createdBy == uid && status != null) {
+        } else {
+          // Modified
+          final prev = _last[id]!;
+          final prevStatus = prev['status'] as String?;
+          if (createdBy == uid && status != null && status != prevStatus) {
             if (status == 'accepted') {
               _showNotification(title: 'Challenge Accepted', body: '${opponentName} accepted your challenge');
             } else if (status == 'declined') {
@@ -66,6 +71,9 @@ class MatchesNotificationService {
           }
         }
       }
+      _last
+        ..clear()
+        ..addAll(current);
     });
   }
 

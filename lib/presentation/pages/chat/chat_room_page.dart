@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firebase dihapus
 import 'package:wmp/data/models/fighter_model.dart';
 import 'package:wmp/presentation/pages/profile/profile_page.dart';
 
@@ -42,16 +42,25 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           final parts = _roomId!.split('_');
           if (parts.length == 2) {
             _userIds = parts;
-            FirestoreService.instance.ensureChatRoom(_roomId!, userIds: _userIds);
+            FirestoreService.instance.ensureChatRoom(
+              _roomId!,
+              userIds: _userIds,
+            );
             final myUid = AuthService.instance.currentUser?.uid;
             if (myUid != null) {
               final uidA = parts[0];
               final uidB = parts[1];
               _peerUid = uidA == myUid ? uidB : uidA;
+              // Tandai sebagai telah dibaca ketika halaman dibuka
+              FirestoreService.instance.markRoomRead(_roomId!, myUid);
             }
           } else {
             // fallback: tetap buat dokumen tanpa userIds agar updatedAt terisi
             FirestoreService.instance.ensureChatRoom(_roomId!);
+            final myUid = AuthService.instance.currentUser?.uid;
+            if (myUid != null) {
+              FirestoreService.instance.markRoomRead(_roomId!, myUid);
+            }
           }
         }
       }
@@ -63,14 +72,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     if (text.isEmpty || _roomId == null) return;
     final uid = AuthService.instance.currentUser?.uid;
     if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login untuk mengirim pesan')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan login untuk mengirim pesan')),
+      );
       return;
     }
     try {
       await FirestoreService.instance.sendChatMessage(_roomId!, {
         'text': text,
         'senderId': uid,
-        'createdAt': FieldValue.serverTimestamp(),
       }, userIds: _userIds.isNotEmpty ? _userIds : null);
       _controller.clear();
       // Scroll ke bawah
@@ -84,7 +94,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         }
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengirim: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengirim: $e')));
     }
   }
 
@@ -119,10 +131,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: const [
-                            BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(3, 3),
+                            ),
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -160,6 +179,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                               imagePath: 'assets/images/dummyimage.jpg',
                               experience: 'beginner',
                               distance: 0.0,
+                              location: '-',
                               match: '—',
                               weight: '—',
                               height: '—',
@@ -168,7 +188,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => ProfilePage(fighter: fighter, uid: _peerUid),
+                                builder: (_) => ProfilePage(
+                                  fighter: fighter,
+                                  uid: _peerUid,
+                                ),
                               ),
                             );
                           }
@@ -176,7 +199,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                         itemBuilder: (context) => [
                           const PopupMenuItem<String>(
                             value: 'view_profile',
-                            child: Text('View Profile', style: TextStyle(color: Colors.white)),
+                            child: Text(
+                              'View Profile',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
                         ],
                         child: Container(
@@ -185,10 +211,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: const [
-                              BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                              BoxShadow(
+                                color: Color(0xFF4C2C82),
+                                offset: Offset(3, 3),
+                              ),
                             ],
                           ),
-                          child: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.more_vert,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -199,31 +232,48 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               // Messages list
               Expanded(
                 child: _roomId == null
-                    ? const Center(child: Text('Room tidak ditemukan', style: TextStyle(color: Colors.white)))
-                    : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: FirestoreService.instance.streamChatMessages(_roomId!),
+                    ? const Center(
+                        child: Text(
+                          'Room tidak ditemukan',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      )
+                    : StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: FirestoreService.instance.streamChatMessages(
+                          _roomId!,
+                        ),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator(color: Colors.white));
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            );
                           }
-                          final docs = snapshot.data?.docs ?? [];
+                          final items = snapshot.data ?? [];
                           final uid = AuthService.instance.currentUser?.uid;
                           return ListView.builder(
                             controller: _scrollController,
                             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                            itemCount: docs.length,
+                            itemCount: items.length,
                             itemBuilder: (context, index) {
-                              final data = docs[index].data();
+                              final data = items[index];
                               final text = (data['text'] as String?) ?? '';
                               final senderId = data['senderId'] as String?;
                               final ts = data['createdAt'];
-                              DateTime time;
-                              if (ts is Timestamp) {
-                                time = ts.toDate();
-                              } else {
-                                time = DateTime.now();
-                              }
-                              final msg = _ChatMessage(text: text, time: time, fromMe: senderId != null && uid != null && senderId == uid);
+                              final time = ts is String
+                                  ? (DateTime.tryParse(ts)?.toLocal() ??
+                                        DateTime.now())
+                                  : DateTime.now();
+                              final msg = _ChatMessage(
+                                text: text,
+                                time: time,
+                                fromMe:
+                                    senderId != null &&
+                                    uid != null &&
+                                    senderId == uid,
+                              );
                               return _MessageBubble(message: msg);
                             },
                           );
@@ -269,12 +319,18 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: const [
-                              BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                              BoxShadow(
+                                color: Color(0xFF4C2C82),
+                                offset: Offset(3, 3),
+                              ),
                             ],
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: SvgPicture.asset('assets/icons/send.svg', color: Colors.white),
+                            child: SvgPicture.asset(
+                              'assets/icons/send.svg',
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -297,7 +353,9 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final align = message.fromMe ? Alignment.centerRight : Alignment.centerLeft;
-    final bubbleColor = message.fromMe ? const Color(0xFF8B5CF6) : const Color(0xFF4C2C82);
+    final bubbleColor = message.fromMe
+        ? const Color(0xFF8B5CF6)
+        : const Color(0xFF4C2C82);
     final shadowColor = const Color(0xFF4C2C82);
 
     return Align(
@@ -305,16 +363,22 @@ class _MessageBubble extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Column(
-          crossAxisAlignment: message.fromMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: message.fromMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.78,
+              ),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: bubbleColor,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: shadowColor, offset: const Offset(4, 4))],
+                boxShadow: [
+                  BoxShadow(color: shadowColor, offset: const Offset(4, 4)),
+                ],
               ),
               child: Text(
                 message.text,

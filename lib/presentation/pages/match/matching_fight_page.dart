@@ -41,10 +41,17 @@ class MatchingFightPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: const [
-                            BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(3, 3),
+                            ),
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -76,7 +83,10 @@ class MatchingFightPage extends StatelessWidget {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: const Color(0xFF5CFF85), width: 2),
+                        border: Border.all(
+                          color: const Color(0xFF5CFF85),
+                          width: 2,
+                        ),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x885CFF85),
@@ -96,7 +106,10 @@ class MatchingFightPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: const [
-                            BoxShadow(color: Color(0xFF4C2C82), offset: Offset(6, 6)),
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(6, 6),
+                            ),
                           ],
                         ),
                         child: Column(
@@ -151,7 +164,9 @@ class MatchingFightPage extends StatelessWidget {
                                 ),
                                 _vsBox(),
                                 _avatarBox(
-                                  imageAsset: item?.avatarAsset ?? 'assets/images/dummyimage.jpg',
+                                  imageAsset:
+                                      item?.avatarAsset ??
+                                      'assets/images/dummyimage.jpg',
                                   badgeAsset: 'assets/icons/lightning.svg',
                                   badgeBgColor: const Color(0xFF2B164A),
                                   badgeTintColor: const Color(0xFFFF7CFD),
@@ -163,7 +178,10 @@ class MatchingFightPage extends StatelessWidget {
                             RichText(
                               textAlign: TextAlign.center,
                               text: TextSpan(
-                                style: const TextStyle(fontSize: 14, color: Color(0xFFF5EFFF)),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFF5EFFF),
+                                ),
                                 children: [
                                   const TextSpan(text: 'You and '),
                                   TextSpan(
@@ -179,7 +197,7 @@ class MatchingFightPage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 24),
-            // Challenge Profile button with icon
+                            // Challenge Profile button with icon
                             GestureDetector(
                               onTap: () {
                                 final fighter = Fighter(
@@ -188,9 +206,12 @@ class MatchingFightPage extends StatelessWidget {
                                   martialArt: item?.style ?? 'Muay Thai',
                                   bio:
                                       'Ready to spar and plan the next session. Tap to chat or see more details.',
-                                  imagePath: item?.avatarAsset ?? 'assets/images/dummyimage.jpg',
+                                  imagePath:
+                                      item?.avatarAsset ??
+                                      'assets/images/dummyimage.jpg',
                                   experience: 'beginner',
                                   distance: 1.2,
+                                  location: 'Unknown',
                                   match: '12 matches',
                                   weight: '70 kg',
                                   height: '175 cm',
@@ -199,7 +220,8 @@ class MatchingFightPage extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => ProfilePage(fighter: fighter),
+                                    builder: (_) =>
+                                        ProfilePage(fighter: fighter),
                                   ),
                                 );
                               },
@@ -209,18 +231,27 @@ class MatchingFightPage extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF5CFF85),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
                                   boxShadow: const [
-                                    BoxShadow(color: Color(0xFF4C2C82), offset: Offset(4, 4)),
+                                    BoxShadow(
+                                      color: Color(0xFF4C2C82),
+                                      offset: Offset(4, 4),
+                                    ),
                                   ],
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    SvgPicture.asset('assets/icons/msg.svg', color: const Color(0xFF2B164A)),
+                                    SvgPicture.asset(
+                                      'assets/icons/msg.svg',
+                                      color: const Color(0xFF2B164A),
+                                    ),
                                     const SizedBox(width: 10),
                                     const Text(
-                                'Challenge Profile',
+                                      'Challenge Profile',
                                       style: TextStyle(
                                         fontFamily: 'Press Start 2P',
                                         fontSize: 14,
@@ -241,12 +272,18 @@ class MatchingFightPage extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF2B164A),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    SvgPicture.asset('assets/icons/cancle.svg', color: Colors.white),
+                                    SvgPicture.asset(
+                                      'assets/icons/cancle.svg',
+                                      color: Colors.white,
+                                    ),
                                     const SizedBox(width: 10),
                                     const Text(
                                       'Cancel',
@@ -275,7 +312,10 @@ class MatchingFightPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: const [
-                            BoxShadow(color: Color(0xFF4C2C82), offset: Offset(4, 4)),
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(4, 4),
+                            ),
                           ],
                         ),
                         child: Padding(
@@ -330,12 +370,14 @@ class MatchingFightPage extends StatelessWidget {
                 color: badgeBgColor ?? const Color(0xFF2B164A),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [BoxShadow(color: Color(0xFF4C2C82), offset: Offset(2, 2))],
+                boxShadow: const [
+                  BoxShadow(color: Color(0xFF4C2C82), offset: Offset(2, 2)),
+                ],
               ),
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: SvgPicture.asset(
-                  badgeAsset!,
+                  badgeAsset,
                   color: badgeTintColor ?? Colors.white,
                 ),
               ),
@@ -354,7 +396,9 @@ class MatchingFightPage extends StatelessWidget {
         color: const Color(0xFF5CFF85),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3))],
+        boxShadow: const [
+          BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+        ],
       ),
       child: const Text(
         'VS',

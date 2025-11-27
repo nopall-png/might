@@ -38,14 +38,29 @@ class FighterCard extends StatelessWidget {
                 height: 240,
                 child: Stack(
                   children: [
-                    Image.asset(
-                      fighter.imagePath,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
+                    // Gunakan foto dari database jika berupa URL, selain itu fallback ke asset
+                    if (fighter.imagePath.startsWith('http'))
+                      Image.network(
+                        fighter.imagePath,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (ctx, err, stack) => Image.asset(
+                          'assets/images/dummyimage.jpg',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      )
+                    else
+                      Image.asset(
+                        fighter.imagePath,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
 
-                    // DISTANCE BADGE
+                    // LOCATION BADGE
                     Positioned(
                       top: 12,
                       left: 12,
@@ -69,7 +84,7 @@ class FighterCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          '${fighter.distance} km',
+                          fighter.location,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,

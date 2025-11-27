@@ -1,21 +1,125 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+import 'package:appwrite/appwrite.dart';
+import 'appwrite_service.dart';
+
+class AuthUser {
+  final String uid;
+  final String? email;
+  AuthUser({required this.uid, this.email});
+}
+
+class UserCredential {
+  final AuthUser? user;
+  UserCredential({this.user});
+}
 
 class AuthService {
   AuthService._();
   static final instance = AuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final _controller = StreamController<AuthUser?>.broadcast();
+  Stream<AuthUser?> get authStateChanges => _controller.stream;
+  AuthUser? _currentUser;
+  AuthUser? get currentUser => _currentUser;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-  User? get currentUser => _auth.currentUser;
+  Account get _account => AppwriteService.instance.account;
 
-  Future<UserCredential> signUp({required String email, required String password}) {
-    return _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signUp({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+      );
+      await _account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+      final user = await _account.get();
+      _currentUser = AuthUser(uid: user.$id, email: user.email);
+      _controller.add(_currentUser);
+      return UserCredential(user: _currentUser);
+    } on AppwriteException catch (e) {
+      // Logging detil untuk diagnosa cepat
+      // Contoh kode error: user_already_exists, invalid_credentials, general
+      // Pesan akan dipakai di UI agar lebih informatif
+      // ignore: avoid_print
+      print(
+        '[AuthService] signUp failed: code=${e.code}, message=${e.message}',
+      );
+      throw Exception(e.message ?? 'Gagal registrasi (Appwrite)');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[AuthService] signUp unexpected error: $e');
+      throw Exception('Terjadi kesalahan saat registrasi');
+    }
   }
 
-  Future<UserCredential> signIn({required String email, required String password}) {
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signUpOrSignIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      return await signUp(email: email, password: password);
+    } on Exception catch (e) {
+      final msg = e.toString().toLowerCase();
+      // Jika user sudah ada (409), fallback ke sign in
+      if (msg.contains('already exists')) {
+        // ignore: avoid_print
+        print('[AuthService] signUp conflict, fallback to signIn');
+        return await signIn(email: email, password: password);
+      }
+      rethrow;
+    }
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<UserCredential> signIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+      final user = await _account.get();
+      _currentUser = AuthUser(uid: user.$id, email: user.email);
+      _controller.add(_currentUser);
+      return UserCredential(user: _currentUser);
+    } on AppwriteException catch (e) {
+      // Jika sesi sudah aktif, anggap login sukses dan ambil user saat ini
+      final msg = (e.message ?? '').toLowerCase();
+      if (e.code == 401 && msg.contains('session is active')) {
+        // ignore: avoid_print
+        print(
+          '[AuthService] signIn: session already active, using existing session',
+        );
+        final user = await _account.get();
+        _currentUser = AuthUser(uid: user.$id, email: user.email);
+        _controller.add(_currentUser);
+        return UserCredential(user: _currentUser);
+      }
+      // ignore: avoid_print
+      print(
+        '[AuthService] signIn failed: code=${e.code}, message=${e.message}',
+      );
+      throw Exception(e.message ?? 'Gagal login (Appwrite)');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[AuthService] signIn unexpected error: $e');
+      throw Exception('Terjadi kesalahan saat login');
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _account.deleteSessions();
+    } finally {
+      _currentUser = null;
+      _controller.add(null);
+    }
+  }
 }

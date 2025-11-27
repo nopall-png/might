@@ -60,29 +60,70 @@ class HomePage extends StatelessWidget {
 
   // ✅ HEADER
   Widget _buildHeader(BuildContext context) {
-    final unreadCount = chatItems.fold<int>(
-      0,
-      (sum, item) => sum + item.unread,
-    );
+    final myUid = AuthService.instance.currentUser?.uid;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
             _iconButton(
+              'assets/icons/Bell.png',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.matches),
+            ),
+            const SizedBox(width: 12),
+            _iconButton(
               'assets/icons/profile.svg',
               onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
             ),
             const SizedBox(width: 12),
-            _iconButton(
-              'assets/icons/msg.svg',
-              onTap: () => Navigator.pushNamed(context, AppRoutes.matches),
-              badgeCount: unreadCount,
-            ),
+            // Badge unread dinamis berdasarkan stream chats
+            if (myUid == null)
+              _iconButton(
+                'assets/icons/msg.svg',
+                onTap: () => Navigator.pushNamed(context, AppRoutes.chats),
+              )
+            else
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: FirestoreService.instance.streamUserChats(myUid),
+                builder: (context, snapshot) {
+                  final chats = snapshot.data ?? const [];
+                  int unreadCount = 0;
+                  for (final chat in chats) {
+                    final lastAtStr = chat['lastMessageAt'] as String?;
+                    final lastAt = lastAtStr != null
+                        ? DateTime.tryParse(lastAtStr)
+                        : null;
+                    final lastSenderId = chat['lastMessageSenderId'] as String?;
+                    final readMap = (chat['readAtMap'] is Map)
+                        ? Map<String, dynamic>.from(chat['readAtMap'])
+                        : const <String, dynamic>{};
+                    final myReadStr = readMap[myUid] as String?;
+                    final myReadAt = myReadStr != null
+                        ? DateTime.tryParse(myReadStr)
+                        : null;
+                    final hasUnread =
+                        lastAt != null &&
+                        lastSenderId != null &&
+                        lastSenderId != myUid &&
+                        (myReadAt == null || lastAt.isAfter(myReadAt));
+                    if (hasUnread) unreadCount++;
+                  }
+                  return _iconButton(
+                    'assets/icons/msg.svg',
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.chats),
+                    badgeCount: unreadCount,
+                  );
+                },
+              ),
             const SizedBox(width: 12),
             _iconButton(
               'assets/icons/settings.svg',
               onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+            ),
+            const SizedBox(width: 12),
+            _iconButton(
+              'assets/icons/browser.png',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.whatsNew),
             ),
           ],
         ),
@@ -93,6 +134,18 @@ class HomePage extends StatelessWidget {
 
   // ✅ ICON BUTTON
   Widget _iconButton(String svgPath, {VoidCallback? onTap, int? badgeCount}) {
+    final isSvg = svgPath.toLowerCase().endsWith('.svg');
+    final iconWidget = isSvg
+        ? SvgPicture.asset(svgPath, width: 24, height: 24, color: Colors.white)
+        : Image.asset(
+            svgPath,
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.notifications, color: Colors.white, size: 22),
+          );
+
     final baseIcon = Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -103,12 +156,7 @@ class HomePage extends StatelessWidget {
           BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
         ],
       ),
-      child: SvgPicture.asset(
-        svgPath,
-        width: 24,
-        height: 24,
-        color: Colors.white,
-      ),
+      child: iconWidget,
     );
 
     final withBadge = Stack(
@@ -167,8 +215,8 @@ class HomePage extends StatelessWidget {
           'assets/icons/msg.svg',
           const Color(0xFFA96CFF),
           onTap: () {
-            // Buka daftar Matches Notification, bukan langsung ke chat room kosong
-            Navigator.pushNamed(context, AppRoutes.matches);
+            // Buka daftar percakapan (Chats)
+            Navigator.pushNamed(context, AppRoutes.chats);
           },
         ),
         const SizedBox(width: 24),
@@ -189,6 +237,7 @@ class HomePage extends StatelessWidget {
                   imagePath: 'assets/images/dummyimage2.jpg',
                   experience: 'intermediate',
                   distance: 2.0,
+                  location: 'Unknown',
                   match: '12 matches',
                   weight: '70 kg',
                   height: '175 cm',

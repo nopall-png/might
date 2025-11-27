@@ -116,7 +116,7 @@ class MatchPopup extends StatelessWidget {
                       ),
                     ),
 
-                    // Avatar kanan (fighter matched)
+                    // Avatar kanan (fighter matched) - gunakan foto dari database
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -126,11 +126,27 @@ class MatchPopup extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFF7A3FFF), width: 4),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/images/dummyimage2.jpg'),
-                              fit: BoxFit.cover,
-                            ),
                           ),
+                          clipBehavior: Clip.hardEdge,
+                          child: (fighter.imagePath.startsWith('http'))
+                              ? Image.network(
+                                  fighter.imagePath,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (ctx, err, stack) => Image.asset(
+                                    'assets/images/dummyimage2.jpg',
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                                )
+                              : Image.asset(
+                                  'assets/images/dummyimage2.jpg',
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
                         ),
                         Positioned(
                           left: -8,
