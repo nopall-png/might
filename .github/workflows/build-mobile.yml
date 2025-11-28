@@ -114,55 +114,9 @@ jobs:
       - name: Install CocoaPods
         run: |
           sudo gem install cocoapods --no-document || true
-          # Pastikan konfigurasi Flutter tersedia (Generated.xcconfig)
-          flutter pub get
-          # Buat Podfile otomatis bila belum ada (self-heal)
-          if [ ! -f ios/Podfile ]; then
-            cat > ios/Podfile <<'PODFILE'
-            # CocoaPods analytics disabled.
-            ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-
-            platform :ios, '12.0'
-
-            project 'Runner', {
-              'Debug' => :debug,
-              'Profile' => :release,
-              'Release' => :release,
-            }
-
-            def flutter_root
-              generated_xcode_build_settings_path = File.join('..', 'Flutter', 'Generated.xcconfig')
-              unless File.exist?(generated_xcode_build_settings_path)
-                raise "Generated.xcconfig must exist. Run 'flutter pub get' first."
-              end
-              File.foreach(generated_xcode_build_settings_path) do |line|
-                match = line.match(/FLUTTER_ROOT=(.*)/)
-                return match[1].strip if match
-              end
-              raise "FLUTTER_ROOT not found in Generated.xcconfig"
-            end
-
-            require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb'))
-            flutter_ios_podfile_setup
-
-            target 'Runner' do
-              use_frameworks!
-              use_modular_headers!
-
-              flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-            end
-
-            post_install do |installer|
-              installer.pods_project.targets.each do |target|
-                flutter_additional_ios_build_settings(target)
-              end
-            end
-            PODFILE
-          fi
-          cd ios
           pod repo update
           pod install --repo-update --verbose
-          cd ..
+        working-directory: ios
 
       - name: Import signing certificates & provisioning profile
         uses: apple-actions/import-codesign-certs@v2
