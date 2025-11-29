@@ -19,7 +19,7 @@ export default async function Page() {
           <h1 className="hero-title">MIGHT – Meet and Fight</h1>
           <p className="muted">Meet Your Match, Own the Fight</p>
           <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <a className="pixel-btn" href="/api/download/android">Download App</a>
+            <a className="pixel-btn" href="/app-release.apk" download>Download App</a>
             <a className="pixel-btn" href="#features">View Features</a>
           </div>
         </div>
@@ -74,7 +74,7 @@ export default async function Page() {
         <p className="muted">Choose your platform to get started.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12, alignItems: 'center' }}>
           {/* Replace these links with your public app URLs when available */}
-          <a className="pixel-btn" href="/api/download/android" aria-label="Download Android">Android</a>
+          <a className="pixel-btn" href="/app-release.apk" download aria-label="Download Android">Android</a>
           {apkSizeLabel && (
             <span className="muted" aria-hidden="true">({apkSizeLabel})</span>
           )}
