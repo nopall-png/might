@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/auth/login_page.dart';
+import 'package:wmp/presentation/widgets/page_transitions.dart';
 
 class OnboardingPage3 extends StatelessWidget {
   const OnboardingPage3({super.key});
@@ -101,9 +102,8 @@ class OnboardingPage3 extends StatelessWidget {
             /// BUTTON GET STARTED
             GestureDetector(
               onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                Navigator.of(context).pushReplacement(
+                  slideFadeRoute(const LoginPage()),
                 );
               },
               child: Container(

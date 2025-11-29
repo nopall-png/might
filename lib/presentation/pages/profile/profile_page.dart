@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 // Firebase dihapus
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
+import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 
 class ProfilePage extends StatelessWidget {
   final Fighter fighter;
@@ -83,49 +84,9 @@ class ProfilePage extends StatelessWidget {
 
   // ✅ APP BAR
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(72),
-      child: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5EFFF),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.arrow_back, size: 20),
-                  ),
-                ),
-                const Text(
-                  'Your Opponent',
-                  style: TextStyle(
-                    fontFamily: 'Press Start 2P',
-                    fontSize: 14,
-                    color: Color(0xFFF5EFFF),
-                  ),
-                ),
-                const SizedBox(width: 40),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return ResponsiveGradientAppBar(
+      title: 'Your Opponent',
+      onBack: () => Navigator.pop(context),
     );
   }
 

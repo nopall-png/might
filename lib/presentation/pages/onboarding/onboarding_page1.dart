@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'onboarding_page2.dart';
+import 'package:wmp/presentation/widgets/page_transitions.dart';
+import 'package:wmp/presentation/pages/auth/login_page.dart';
 
 class OnboardingPage1 extends StatelessWidget {
   const OnboardingPage1({super.key});
@@ -100,12 +102,9 @@ class OnboardingPage1 extends StatelessWidget {
                 // NEXT BUTTON
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(
+                    Navigator.of(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const OnboardingPage2(),
-                      ),
-                    );
+                    ).push(slideFadeRoute(const OnboardingPage2()));
                   },
                   child: Container(
                     width: 384,
@@ -139,10 +138,18 @@ class OnboardingPage1 extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // SKIP TEXT
-                const Text(
-                  "Skip",
-                  style: TextStyle(color: Color(0xFFF4EFFF), fontSize: 16),
+                // SKIP TEXT → go to Login
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      slideFadeRoute(const LoginPage()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text(
+                    "Skip",
+                    style: TextStyle(color: Color(0xFFF4EFFF), fontSize: 16),
+                  ),
                 ),
               ],
             ),

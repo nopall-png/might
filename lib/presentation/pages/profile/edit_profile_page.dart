@@ -6,6 +6,7 @@ import 'package:wmp/utils/storage_uploader_stub.dart'
     if (dart.library.io) 'package:wmp/utils/storage_uploader_io.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wmp/presentation/widgets/avatar_cropper.dart';
+import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 // Firebase imports dihapus, migrasi ke Appwrite
 
 class EditProfilePage extends StatefulWidget {
@@ -86,6 +87,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5EFFF),
+      appBar: ResponsiveGradientAppBar(
+        title: 'Edit Profile',
+        onBack: () => Navigator.pop(context),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -94,8 +99,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   _buildProfileCard(cardWidth),
                   const SizedBox(height: 24),
                   _buildExperienceLevel(),
@@ -128,44 +132,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF7A3FFF), Color(0xFFA96CFF)],
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5EFFF),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.arrow_back, size: 20),
-            ),
-          ),
-          const Text(
-            'Edit Profile',
-            style: TextStyle(
-              fontFamily: 'Press Start 2P',
-              fontSize: 14,
-              color: Color(0xFFF5EFFF),
-            ),
-          ),
-          // Optional more icon placeholder
-          Container(width: 40, height: 40),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProfileCard(double cardWidth) {
     return Container(

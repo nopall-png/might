@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
 import 'package:wmp/routes/app_routes.dart';
+import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 
 class ChatsPage extends StatefulWidget {
   const ChatsPage({super.key});
@@ -30,6 +31,10 @@ class _ChatsPageState extends State<ChatsPage> {
     final myUid = AuthService.instance.currentUser?.uid;
     return Scaffold(
       extendBody: true,
+      appBar: ResponsiveGradientAppBar(
+        title: 'Chats',
+        onBack: () => Navigator.pop(context),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -43,44 +48,7 @@ class _ChatsPageState extends State<ChatsPage> {
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFA96CFF),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0xFF4C2C82),
-                              offset: Offset(3, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const Text(
-                      'Chats',
-                      style: TextStyle(
-                        fontFamily: 'Press Start 2P',
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 8),
 
               Expanded(
                 child: Container(

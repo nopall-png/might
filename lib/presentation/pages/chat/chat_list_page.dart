@@ -5,6 +5,7 @@ import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
 // Firebase dihapus
 import 'package:wmp/routes/app_routes.dart';
+import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 
 class ChatListPage extends StatelessWidget {
   const ChatListPage({super.key});
@@ -14,6 +15,10 @@ class ChatListPage extends StatelessWidget {
     final uid = AuthService.instance.currentUser?.uid;
 
     return Scaffold(
+      appBar: ResponsiveGradientAppBar(
+        title: 'Matches Notification',
+        onBack: () => Navigator.pop(context),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -27,49 +32,7 @@ class ChatListPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
-                  children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFA96CFF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0xFF4C2C82),
-                              offset: Offset(3, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Matches Notification',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          letterSpacing: 1.2,
-                          fontFamily: 'Press Start 2P',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 8),
 
               // Search bar
               Padding(

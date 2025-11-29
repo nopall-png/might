@@ -3,6 +3,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:wmp/presentation/pages/profile/create_profile_page.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
+import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 // Migrated: remove Firebase imports
 
 class RegisterScreen extends StatefulWidget {
@@ -35,7 +36,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      appBar: ResponsiveGradientAppBar(
+        title: 'REGISTER',
+        onBack: () => Navigator.pop(context),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -52,8 +56,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _backHeader(context),
-
                 const SizedBox(height: 20),
                 // LOGO MEET & FIGHT (sama kayak di Login)
                 ClipOval(
