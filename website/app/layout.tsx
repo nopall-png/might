@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     'MIGHT helps fighters connect, schedule matches, and track results — all in a retro, pixel‑styled app. Build your profile, find opponents, and grow your record.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo1.png',
   },
 };
 
