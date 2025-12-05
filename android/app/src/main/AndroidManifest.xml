@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Network access for Firebase/HTTP requests -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Location permissions for Geolocator -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- For Android <= 12 to read images from gallery -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <!-- Read images from media store (Android 13+) for image_picker -->

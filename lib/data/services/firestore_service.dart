@@ -72,6 +72,80 @@ class FirestoreService {
     );
   }
 
+  // ==========================
+  // BLOCK / UNBLOCK USERS
+  // ==========================
+  Future<void> blockUser({required String myUid, required String targetUid}) async {
+    try {
+      final doc = await _db.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.profilesCollectionId,
+        documentId: myUid,
+      );
+      final existingList = (doc.data['blockedIds'] is List)
+          ? List<String>.from(doc.data['blockedIds'])
+          : <String>[];
+      if (!existingList.contains(targetUid)) {
+        existingList.add(targetUid);
+        await _db.updateDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.profilesCollectionId,
+          documentId: myUid,
+          data: {
+            'blockedIds': existingList,
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          },
+        );
+      }
+    } catch (_) {
+      // Jika gagal (misal profile belum ada), tetap coba create minimal
+      try {
+        await _db.createDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.profilesCollectionId,
+          documentId: myUid,
+          data: {
+            'blockedIds': [targetUid],
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          },
+          permissions: [
+            Permission.read(Role.user(myUid)),
+            Permission.write(Role.user(myUid)),
+          ],
+        );
+      } catch (_) {
+        // Abaikan agar UI tidak terblokir; pengguna akan diberi tahu di layer atas
+      }
+    }
+  }
+
+  Future<void> unblockUser({required String myUid, required String targetUid}) async {
+    try {
+      final doc = await _db.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.profilesCollectionId,
+        documentId: myUid,
+      );
+      final existingList = (doc.data['blockedIds'] is List)
+          ? List<String>.from(doc.data['blockedIds'])
+          : <String>[];
+      if (existingList.contains(targetUid)) {
+        existingList.removeWhere((e) => e == targetUid);
+        await _db.updateDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.profilesCollectionId,
+          documentId: myUid,
+          data: {
+            'blockedIds': existingList,
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          },
+        );
+      }
+    } catch (_) {
+      // Abaikan kegagalan; tidak kritikal untuk UX
+    }
+  }
+
   Stream<Map<String, dynamic>?> streamUserProfile(String uid) {
     final controller = StreamController<Map<String, dynamic>?>.broadcast();
     () async {
@@ -418,6 +492,35 @@ class FirestoreService {
     String? createdBy,
     Map<String, dynamic>? extra,
   }) async {
+    // Cegah pembuatan match jika salah satu pihak memblokir yang lain
+    try {
+      if (userIds.length == 2) {
+        final a = userIds[0];
+        final b = userIds[1];
+        final aDoc = await _db.getDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.profilesCollectionId,
+          documentId: a,
+        );
+        final bDoc = await _db.getDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.profilesCollectionId,
+          documentId: b,
+        );
+        final aBlocked = (aDoc.data['blockedIds'] is List)
+            ? List<String>.from(aDoc.data['blockedIds'])
+            : const <String>[];
+        final bBlocked = (bDoc.data['blockedIds'] is List)
+            ? List<String>.from(bDoc.data['blockedIds'])
+            : const <String>[];
+        if (aBlocked.contains(b) || bBlocked.contains(a)) {
+          throw AppwriteException('blocked');
+        }
+      }
+    } catch (_) {
+      // Jika pengecekan gagal atau terblokir, lempar Exception agar UI memberi tahu pengguna
+      rethrow;
+    }
     final parts = [...userIds]..sort();
     final roomId = '${parts.first}_${parts.last}';
     final data = {

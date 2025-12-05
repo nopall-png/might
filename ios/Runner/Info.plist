@@ -45,5 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+    <!-- Location permission description for Geolocator -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Kami menggunakan lokasi untuk menampilkan jarak antar pengguna.</string>
 </dict>
 </plist>

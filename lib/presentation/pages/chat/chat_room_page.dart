@@ -77,6 +77,30 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       );
       return;
     }
+    // Cek blokir dua arah sebelum mengirim
+    try {
+      final myProfile = await FirestoreService.instance.getUserProfile(uid);
+      final peerUid = _peerUid;
+      final peerProfile = peerUid != null
+          ? await FirestoreService.instance.getUserProfile(peerUid)
+          : null;
+      final iBlocked = (myProfile?['blockedIds'] is List)
+          ? List<String>.from(myProfile!['blockedIds']).contains(peerUid)
+          : false;
+      final theyBlockedMe = (peerProfile?['blockedIds'] is List)
+          ? List<String>.from(peerProfile!['blockedIds']).contains(uid)
+          : false;
+      if (iBlocked || theyBlockedMe) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pesan diblokir: salah satu pihak telah memblokir'),
+          ),
+        );
+        return;
+      }
+    } catch (_) {
+      // Jika pemeriksaan gagal, lanjutkan tetapi ini jarang terjadi
+    }
     try {
       await FirestoreService.instance.sendChatMessage(_roomId!, {
         'text': text,
@@ -194,6 +218,44 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                 ),
                               ),
                             );
+                          } else if (value == 'block_user') {
+                            final myUid = AuthService.instance.currentUser?.uid;
+                            if (myUid == null || _peerUid == null) return;
+                            FirestoreService.instance
+                                .blockUser(myUid: myUid, targetUid: _peerUid!)
+                                .then((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Pengguna diblokir'),
+                                    ),
+                                  );
+                                })
+                                .catchError((e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Gagal memblokir: $e'),
+                                    ),
+                                  );
+                                });
+                          } else if (value == 'unblock_user') {
+                            final myUid = AuthService.instance.currentUser?.uid;
+                            if (myUid == null || _peerUid == null) return;
+                            FirestoreService.instance
+                                .unblockUser(myUid: myUid, targetUid: _peerUid!)
+                                .then((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Blokir dilepas'),
+                                    ),
+                                  );
+                                })
+                                .catchError((e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Gagal melepas blokir: $e'),
+                                    ),
+                                  );
+                                });
                           }
                         },
                         itemBuilder: (context) => [
@@ -201,6 +263,20 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             value: 'view_profile',
                             child: Text(
                               'View Profile',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'block_user',
+                            child: Text(
+                              'Block user',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'unblock_user',
+                            child: Text(
+                              'Unblock user',
                               style: TextStyle(color: Colors.white),
                             ),
                           ),

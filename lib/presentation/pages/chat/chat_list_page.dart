@@ -134,8 +134,8 @@ class ChatListPage extends StatelessWidget {
                                 builder: (context, profSnap) {
                                   final profile = profSnap.data;
                                   final name =
-                                      opponentName ??
                                       (profile?['displayName'] as String?) ??
+                                      opponentName ??
                                       'Unknown';
                                   final style =
                                       (profile?['martialArt'] as String?) ??

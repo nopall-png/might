@@ -3,6 +3,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:wmp/presentation/pages/profile/create_profile_page.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/firestore_service.dart';
+import 'package:wmp/data/services/matches_notification_service.dart';
+import 'package:wmp/data/services/chat_notification_service.dart';
 import 'package:wmp/presentation/widgets/responsive_app_bar.dart';
 // Migrated: remove Firebase imports
 
@@ -261,6 +263,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         password: password,
                                       );
                                   final uid = cred.user!.uid;
+
+                                  // Mulai listener notifikasi segera setelah berhasil login/signup
+                                  try {
+                                    await MatchesNotificationService.instance
+                                        .startListening(uid);
+                                    await ChatNotificationService.instance
+                                        .startListening(uid);
+                                  } catch (_) {
+                                    // Abaikan jika gagal; tidak menghambat alur registrasi
+                                  }
 
                                   // Step 2: Buat/Update profil user di database
                                   try {

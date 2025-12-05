@@ -47,27 +47,30 @@ class MatchesNotificationService {
         final id = (data['id'] as String?) ?? '';
         if (id.isEmpty) continue;
         current[id] = data;
-        final opponentName = (data['opponentName'] as String?) ?? (data['opponent'] as String?) ?? 'Unknown';
         final createdBy = data['createdBy'] as String?;
         final status = data['status'] as String?;
 
         if (!_last.containsKey(id)) {
           // Added
-          if (createdBy != null && createdBy != uid) {
-            _showNotification(title: 'New Challenge', body: 'Challenge from ${opponentName}');
-          } else {
-            _showNotification(title: 'Challenge Sent', body: 'Waiting for ${opponentName}');
-          }
+          _resolveDisplayName(data, uid).then((name) {
+            if (createdBy != null && createdBy != uid) {
+              _showNotification(title: 'New Challenge', body: 'Challenge from $name');
+            } else {
+              _showNotification(title: 'Challenge Sent', body: 'Waiting for $name');
+            }
+          });
         } else {
           // Modified
           final prev = _last[id]!;
           final prevStatus = prev['status'] as String?;
           if (createdBy == uid && status != null && status != prevStatus) {
-            if (status == 'accepted') {
-              _showNotification(title: 'Challenge Accepted', body: '${opponentName} accepted your challenge');
-            } else if (status == 'declined') {
-              _showNotification(title: 'Challenge Rejected', body: '${opponentName} rejected your challenge');
-            }
+            _resolveDisplayName(data, uid).then((name) {
+              if (status == 'accepted') {
+                _showNotification(title: 'Challenge Accepted', body: '$name accepted your challenge');
+              } else if (status == 'declined') {
+                _showNotification(title: 'Challenge Rejected', body: '$name rejected your challenge');
+              }
+            });
           }
         }
       }
@@ -93,5 +96,41 @@ class MatchesNotificationService {
       ),
     );
     await _notifications.show(DateTime.now().millisecondsSinceEpoch % 100000, title, body, details);
+  }
+
+  // Resolve display name based on who sent the challenge and match participants
+  Future<String> _resolveDisplayName(Map<String, dynamic> data, String myUid) async {
+    try {
+      final createdBy = data['createdBy'] as String?;
+      final userIds = (data['userIds'] as List?)?.whereType<String>().toList() ?? const <String>[];
+
+      String? targetUid;
+      if (createdBy != null && createdBy != myUid) {
+        // We received a challenge: show sender's name
+        targetUid = createdBy;
+      } else {
+        // We sent a challenge: show opponent's name (the other participant)
+        for (final id in userIds) {
+          if (id != myUid) {
+            targetUid = id;
+            break;
+          }
+        }
+      }
+
+      if (targetUid != null) {
+        final profile = await FirestoreService.instance.getUserProfile(targetUid);
+        final name = (profile?['displayName'] as String?) ??
+            (profile?['name'] as String?) ??
+            (profile?['username'] as String?);
+        if (name != null && name.trim().isNotEmpty) {
+          return name;
+        }
+      }
+    } catch (_) {
+      // ignore errors and fall back
+    }
+    // Fall back to what exists in match doc
+    return (data['opponentName'] as String?) ?? (data['opponent'] as String?) ?? 'Unknown';
   }
 }

@@ -20,6 +20,8 @@ dependencies:
   appwrite: ^20.3.2
   image: ^4.1.0
   crop_your_image: ^2.0.0
+  geolocator: ^9.0.2
+  geocoding: ^2.2.0
   
 
 dev_dependencies:

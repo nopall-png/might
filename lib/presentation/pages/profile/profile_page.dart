@@ -61,6 +61,11 @@ class ProfilePage extends StatelessWidget {
 
                 // ✅ CHALLENGE BUTTON
                 _buildChallengeButton(context),
+
+                const SizedBox(height: 16),
+
+                // ✅ BLOCK/UNBLOCK BUTTON
+                _buildBlockButton(context),
               ],
             ),
           ),
@@ -557,8 +562,11 @@ class ProfilePage extends StatelessWidget {
               );
             })
             .catchError((e) {
+              final msg = e.toString().contains('blocked')
+                  ? 'Tidak bisa challenge: salah satu pihak memblokir yang lain'
+                  : 'Gagal mengirim challenge: $e';
               ScaffoldMessenger.of(ctx).showSnackBar(
-                SnackBar(content: Text('Gagal mengirim challenge: $e')),
+                SnackBar(content: Text(msg)),
               );
             });
       },
@@ -578,6 +586,72 @@ class ProfilePage extends StatelessWidget {
               fontFamily: 'Press Start 2P',
               fontSize: 16,
               color: Color(0xFFF5EFFF),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ BLOCK / UNBLOCK BUTTON
+  Widget _buildBlockButton(BuildContext ctx) {
+    return GestureDetector(
+      onTap: () async {
+        final myUid = AuthService.instance.currentUser?.uid;
+        if (myUid == null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(content: Text('Silakan login terlebih dahulu')),
+          );
+          return;
+        }
+        if (uid == null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Uid lawan tidak tersedia. Buka profil dari kartu swipe.',
+              ),
+            ),
+          );
+          return;
+        }
+        try {
+          final myProfile = await FirestoreService.instance.getUserProfile(myUid);
+          final blocked = (myProfile?['blockedIds'] is List)
+              ? List<String>.from(myProfile!['blockedIds'])
+              : <String>[];
+          final isBlocked = blocked.contains(uid!);
+          if (!isBlocked) {
+            await FirestoreService.instance.blockUser(myUid: myUid, targetUid: uid!);
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              const SnackBar(content: Text('Pengguna diblokir')),
+            );
+          } else {
+            await FirestoreService.instance.unblockUser(myUid: myUid, targetUid: uid!);
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              const SnackBar(content: Text('Blokir dilepas')),
+            );
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text('Gagal memperbarui blokir: $e')),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5EFFF),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFF7A3FFF), width: 2),
+        ),
+        child: const Center(
+          child: Text(
+            'Block / Unblock',
+            style: TextStyle(
+              fontFamily: 'Press Start 2P',
+              fontSize: 14,
+              color: Color(0xFF1F1A2E),
             ),
           ),
         ),

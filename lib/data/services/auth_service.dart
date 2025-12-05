@@ -24,6 +24,29 @@ class AuthService {
 
   Account get _account => AppwriteService.instance.account;
 
+  /// Restore session on app start if Appwrite has an active session.
+  /// This ensures users skip onboarding when they already logged in previously.
+  Future<void> restoreSessionIfAny() async {
+    try {
+      final user = await _account.get();
+      _currentUser = AuthUser(uid: user.$id, email: user.email);
+      _controller.add(_currentUser);
+      // ignore: avoid_print
+      print('[AuthService] session restored for uid=${user.$id}');
+    } on AppwriteException catch (e) {
+      // No active session or unable to fetch; treat as logged out
+      _currentUser = null;
+      _controller.add(null);
+      // ignore: avoid_print
+      print('[AuthService] no existing session: code=${e.code}, message=${e.message}');
+    } catch (e) {
+      _currentUser = null;
+      _controller.add(null);
+      // ignore: avoid_print
+      print('[AuthService] restoreSessionIfAny unexpected error: $e');
+    }
+  }
+
   Future<UserCredential> signUp({
     required String email,
     required String password,

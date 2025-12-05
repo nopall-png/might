@@ -7,6 +7,7 @@ import 'package:wmp/data/services/firestore_service.dart';
 import 'package:wmp/presentation/pages/widgets/fighter_card.dart';
 import 'package:wmp/presentation/pages/match/match_popup.dart';
 import 'package:wmp/presentation/pages/profile/profile_page.dart';
+import 'package:wmp/utils/distance_utils.dart';
 
 class SwipeController {
   VoidCallback? skip;
@@ -31,6 +32,13 @@ class _SwipePageState extends State<SwipePage> {
   String? _myUid;
   StreamSubscription<List<Map<String, dynamic>>>? _profilesSub;
   StreamSubscription<AuthUser?>? _authSub;
+  StreamSubscription<Map<String, dynamic>?>? _myProfileSub;
+  Set<String> _myBlocked = <String>{};
+  // Cache semua profil mentah agar bisa re-filter saat blockedIds berubah
+  List<Map<String, dynamic>> _allProfiles = const [];
+  // Koordinat lokasi saya (untuk jarak)
+  double? _myLat;
+  double? _myLng;
 
   Fighter _mapProfileToFighter(Map<String, dynamic> data) {
     final name = (data['displayName'] as String?) ?? 'Fighter';
@@ -55,6 +63,36 @@ class _SwipePageState extends State<SwipePage> {
               : '—');
     final photoUrl = (data['photoUrl'] as String?)?.trim();
     final locationStr = (data['location'] as String?)?.trim();
+    // Hitung jarak jika koordinat tersedia
+    double distKm = 0.0;
+    final theirLatAny = data['lat'];
+    final theirLngAny = data['lng'];
+    final theirLat = (theirLatAny is num)
+        ? theirLatAny.toDouble()
+        : double.tryParse(theirLatAny?.toString() ?? '');
+    final theirLng = (theirLngAny is num)
+        ? theirLngAny.toDouble()
+        : double.tryParse(theirLngAny?.toString() ?? '');
+    if (_myLat != null &&
+        _myLng != null &&
+        theirLat != null &&
+        theirLng != null) {
+      // Import util Haversine
+      distKm = distanceKm(
+        lat1: _myLat!,
+        lon1: _myLng!,
+        lat2: theirLat,
+        lon2: theirLng,
+      );
+    }
+    // Tentukan label lokasi: gunakan field 'location' jika ada,
+    // jika kosong namun koordinat tersedia, tampilkan koordinat sebagai fallback.
+    final locationLabel = (locationStr?.isNotEmpty == true)
+        ? locationStr!
+        : (theirLat != null && theirLng != null
+              ? '${theirLat.toStringAsFixed(4)}, ${theirLng.toStringAsFixed(4)}'
+              : 'Unknown');
+
     return Fighter(
       name: name,
       age: age,
@@ -64,8 +102,8 @@ class _SwipePageState extends State<SwipePage> {
           ? photoUrl
           : 'assets/images/dummyimage.jpg',
       experience: exp,
-      distance: 0.0,
-      location: locationStr?.isNotEmpty == true ? locationStr! : 'Unknown',
+      distance: distKm,
+      location: locationLabel,
       match: '0 matches',
       weight: weightStr,
       height: heightStr,
@@ -143,6 +181,7 @@ class _SwipePageState extends State<SwipePage> {
       _authSub = AuthService.instance.authStateChanges.listen((user) {
         if (user?.uid != null) {
           _myUid = user!.uid;
+          _startMyProfileStream();
           _startProfilesStream();
           // Setelah UID didapat, kita tidak perlu mendengar auth lagi
           _authSub?.cancel();
@@ -151,7 +190,36 @@ class _SwipePageState extends State<SwipePage> {
       });
     }
     // Jika UID sudah ada, langsung mulai stream
+    _startMyProfileStream();
     _startProfilesStream();
+  }
+
+  void _startMyProfileStream() {
+    if (_myUid == null) return;
+    _myProfileSub?.cancel();
+    _myProfileSub = FirestoreService.instance.streamUserProfile(_myUid!).listen(
+      (profile) {
+        final blocked = (profile?['blockedIds'] is List)
+            ? List<String>.from(profile!['blockedIds'])
+            : <String>[];
+        // Ambil koordinat saya
+        final myLatAny = profile?['lat'];
+        final myLngAny = profile?['lng'];
+        final lat = (myLatAny is num)
+            ? myLatAny.toDouble()
+            : double.tryParse(myLatAny?.toString() ?? '');
+        final lng = (myLngAny is num)
+            ? myLngAny.toDouble()
+            : double.tryParse(myLngAny?.toString() ?? '');
+        setState(() {
+          _myBlocked = blocked.toSet();
+          _myLat = lat;
+          _myLng = lng;
+        });
+        // Re-filter daftar ketika blockedIds saya berubah
+        _applyFilter();
+      },
+    );
   }
 
   void _startProfilesStream() {
@@ -160,18 +228,47 @@ class _SwipePageState extends State<SwipePage> {
     _profilesSub = FirestoreService.instance
         .streamAllProfiles(excludeUid: _myUid)
         .listen((list) {
-          final fighters = list.map((d) => _mapProfileToFighter(d)).toList();
-          final uids = list.map((d) => d['uid'] as String).toList();
-          setState(() {
-            _fighters = fighters;
-            _uids = uids;
-            if (_fighters.isEmpty) {
-              index = 0;
-            } else {
-              index = index % _fighters.length;
-            }
-          });
+          // Simpan cache semua profil, lalu terapkan filter
+          _allProfiles = list;
+          _applyFilter();
         });
+  }
+
+  void _applyFilter() {
+    // Filter dua arah: sembunyikan jika mereka memblokir saya atau saya memblokir mereka
+    final filtered = _allProfiles.where((d) {
+      final theirUid = d['uid'] as String?;
+      if (theirUid == null) return false;
+      final theirBlocked = (d['blockedIds'] is List)
+          ? List<String>.from(d['blockedIds']).toSet()
+          : <String>{};
+      final theyBlockedMe = _myUid != null && theirBlocked.contains(_myUid);
+      final iBlockedThem = _myBlocked.contains(theirUid);
+      return !(theyBlockedMe || iBlockedThem);
+    }).toList();
+    // Buat pasangan (fighter, uid) lalu urutkan berdasarkan jarak terdekat
+    final pairs = filtered.map((d) {
+      final f = _mapProfileToFighter(d);
+      final uid = d['uid'] as String;
+      return {'f': f, 'uid': uid};
+    }).toList();
+    pairs.sort((a, b) {
+      final da = (a['f'] as Fighter).distance;
+      final db = (b['f'] as Fighter).distance;
+      final aHas = da > 0;
+      final bHas = db > 0;
+      if (aHas && bHas) return da.compareTo(db); // keduanya punya jarak
+      if (aHas && !bHas) return -1; // a lebih prioritas
+      if (!aHas && bHas) return 1; // b lebih prioritas
+      return 0; // keduanya tanpa jarak, pertahankan urutan relatif
+    });
+    final fighters = pairs.map((e) => e['f'] as Fighter).toList();
+    final uids = pairs.map((e) => e['uid'] as String).toList();
+    setState(() {
+      _fighters = fighters;
+      _uids = uids;
+      index = _fighters.isEmpty ? 0 : index % _fighters.length;
+    });
   }
 
   @override
@@ -187,6 +284,7 @@ class _SwipePageState extends State<SwipePage> {
   void dispose() {
     _profilesSub?.cancel();
     _authSub?.cancel();
+    _myProfileSub?.cancel();
     super.dispose();
   }
 

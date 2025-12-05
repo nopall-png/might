@@ -4,6 +4,7 @@ import '../onboarding/onboarding_page1.dart';
 import '../home/home_page.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/data/services/matches_notification_service.dart';
+import 'package:wmp/data/services/chat_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,6 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (isLoggedIn) {
         final uid = AuthService.instance.currentUser!.uid;
         await MatchesNotificationService.instance.startListening(uid);
+        await ChatNotificationService.instance.startListening(uid);
       }
       Navigator.pushReplacement(
         context,

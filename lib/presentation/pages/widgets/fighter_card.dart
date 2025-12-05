@@ -11,6 +11,15 @@ class FighterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth - 60;
+    // Format distance text if available (> 0)
+    String? distanceText;
+    if (fighter.distance > 0) {
+      final d = fighter.distance;
+      // Use 1 decimal for <100km, otherwise round to integer
+      distanceText = d >= 100
+          ? '${d.toStringAsFixed(0)} km'
+          : '${d.toStringAsFixed(1)} km';
+    }
 
     return GestureDetector(
       onTap: onTap, // ✅ klik card
@@ -60,39 +69,41 @@ class FighterCard extends StatelessWidget {
                         height: double.infinity,
                       ),
 
-                    // LOCATION BADGE
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7A3FFF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFF9F8FF),
-                            width: 2,
+                    // (Nama lokasi dihapus sesuai permintaan; hanya jarak ditampilkan)
+                    // DISTANCE BADGE (if distance available)
+                    if (distanceText != null)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0xFF4C2C82),
-                              offset: Offset(3, 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFA96CFF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFF9F8FF),
+                              width: 2,
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          fighter.location,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFF4C2C82),
+                                offset: Offset(3, 3),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            distanceText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -115,6 +126,7 @@ class FighterCard extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
+                  // Baris jarak di bawah nama dihapus untuk menghindari duplikasi.
                   const SizedBox(height: 16),
 
                   // MARTIAL ART

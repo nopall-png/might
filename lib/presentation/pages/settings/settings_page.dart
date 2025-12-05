@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wmp/routes/app_routes.dart';
 import 'package:wmp/data/services/auth_service.dart';
-import 'package:wmp/presentation/pages/profile/profile_page.dart';
-import 'package:wmp/data/models/fighter_model.dart';
+import 'package:wmp/data/services/firestore_service.dart';
+import 'package:wmp/data/services/location_service.dart';
+import 'package:wmp/data/services/matches_notification_service.dart';
+import 'package:wmp/data/services/chat_notification_service.dart';
+// Removed ProfilePage import; we navigate to Edit Profile via routes
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -42,10 +45,17 @@ class SettingsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: const [
-                            BoxShadow(color: Color(0xFF4C2C82), offset: Offset(3, 3)),
+                            BoxShadow(
+                              color: Color(0xFF4C2C82),
+                              offset: Offset(3, 3),
+                            ),
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const Text(
@@ -75,15 +85,27 @@ class SettingsPage extends StatelessWidget {
                           children: const [
                             Text(
                               'App Version',
-                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
                             Text(
                               appVersion,
-                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Blocked Users Section
+                      _blockedUsersSection(context),
 
                       const SizedBox(height: 16),
 
@@ -92,58 +114,108 @@ class SettingsPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // View My Profile button
+                            // View My Profile button → navigates to Edit Profile
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFA96CFF),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(color: Colors.white, width: 2),
+                                  side: const BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               onPressed: () {
-                                final uid = AuthService.instance.currentUser?.uid;
+                                final uid =
+                                    AuthService.instance.currentUser?.uid;
                                 if (uid == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       backgroundColor: Colors.redAccent,
-                                      content: Text('Harap login terlebih dahulu'),
+                                      content: Text(
+                                        'Harap login terlebih dahulu',
+                                      ),
                                     ),
                                   );
                                   return;
                                 }
-
-                                // Fallback Fighter untuk avatar dan layout jika data belum lengkap
-                                final fallbackFighter = Fighter(
-                                  name: 'You',
-                                  age: 20,
-                                  martialArt: '—',
-                                  bio: 'Profil saya',
-                                  imagePath: 'assets/images/dummyimage.jpg',
-                                  experience: 'beginner',
-                                  distance: 0.0,
-                                  location: '-',
-                                  match: '0 matches',
-                                  weight: '—',
-                                  height: '—',
-                                  lastMatch: '—',
-                                );
-
-                                Navigator.push(
+                                Navigator.pushNamed(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProfilePage(
-                                      fighter: fallbackFighter,
-                                      uid: uid,
+                                  AppRoutes.editProfile,
+                                );
+                              },
+                              child: const Text(
+                                'Edit Profile',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Perbarui lokasi (simpan lat/lng ke profil)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7A3FFF),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              onPressed: () async {
+                                final uid =
+                                    AuthService.instance.currentUser?.uid;
+                                if (uid == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      backgroundColor: Colors.redAccent,
+                                      content: Text(
+                                        'Harap login terlebih dahulu',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Mengambil lokasi…'),
+                                  ),
+                                );
+                                final ok = await LocationService.instance
+                                    .updateMyLocationToProfile();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: ok
+                                        ? const Color(0xFF4CAF50)
+                                        : Colors.redAccent,
+                                    content: Text(
+                                      ok
+                                          ? 'Lokasi berhasil diperbarui'
+                                          : 'Gagal memperbarui lokasi (izin ditolak atau layanan nonaktif)',
                                     ),
                                   ),
                                 );
                               },
                               child: const Text(
-                                'View My Profile',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                'Perbarui lokasi',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
 
@@ -156,12 +228,20 @@ class SettingsPage extends StatelessWidget {
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(color: Colors.white, width: 2),
+                                  side: const BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               onPressed: () async {
-                                // Logout via Firebase Auth, then clear navigation stack
+                                // Stop notifications listeners to mencegah kebocoran
+                                await MatchesNotificationService.instance.stopListening();
+                                await ChatNotificationService.instance.stopListening();
+                                // Logout, lalu bersihkan stack
                                 await AuthService.instance.signOut();
                                 if (context.mounted) {
                                   Navigator.pushNamedAndRemoveUntil(
@@ -173,7 +253,10 @@ class SettingsPage extends StatelessWidget {
                               },
                               child: const Text(
                                 'Logout',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -186,6 +269,145 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _blockedUsersSection(BuildContext context) {
+    final uid = AuthService.instance.currentUser?.uid;
+    if (uid == null) {
+      return _section(
+        title: 'Blocked Users',
+        child: const Text(
+          'Silakan login untuk melihat daftar pengguna yang diblokir.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+      );
+    }
+
+    return _section(
+      title: 'Blocked Users',
+      child: StreamBuilder<Map<String, dynamic>?>(
+        stream: FirestoreService.instance.streamUserProfile(uid),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
+          }
+          final data = snap.data;
+          final ids = (data?['blockedIds'] is List)
+              ? List<String>.from(
+                  data!['blockedIds'],
+                ).where((e) => e.isNotEmpty).toList()
+              : <String>[];
+          if (ids.isEmpty) {
+            return const Text(
+              'Tidak ada pengguna yang diblokir.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            );
+          }
+
+          return FutureBuilder<List<Map<String, dynamic>?>>(
+            future: Future.wait(
+              ids.map((id) => FirestoreService.instance.getUserProfile(id)),
+            ),
+            builder: (context, profSnap) {
+              if (profSnap.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                );
+              }
+              final profiles = (profSnap.data ?? [])
+                  .whereType<Map<String, dynamic>>()
+                  .toList();
+              if (profiles.isEmpty) {
+                return const Text(
+                  'Tidak ada pengguna yang diblokir.',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                );
+              }
+
+              return Column(
+                children: profiles.map((p) {
+                  final targetUid = p['uid'] as String?;
+                  final name = (p['displayName'] as String?) ?? 'Unknown';
+                  final photo = (p['photoUrl'] as String?)?.trim();
+                  final img = (photo != null && photo.isNotEmpty)
+                      ? NetworkImage(photo)
+                      : const AssetImage('assets/images/dummyimage.jpg');
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7A3FFF).withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: img as ImageProvider,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: const Color(0xFFA96CFF),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onPressed: targetUid == null
+                              ? null
+                              : () async {
+                                  await FirestoreService.instance.unblockUser(
+                                    myUid: uid,
+                                    targetUid: targetUid,
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Unblocked $name'),
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: const Text('Unblock'),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          );
+        },
       ),
     );
   }

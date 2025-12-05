@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:wmp/presentation/pages/auth/register_page.dart';
 import 'package:wmp/data/services/auth_service.dart';
 import 'package:wmp/presentation/pages/home/home_page.dart';
+import 'package:wmp/data/services/matches_notification_service.dart';
+import 'package:wmp/data/services/chat_notification_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -138,6 +140,12 @@ class _LoginPageState extends State<LoginPage> {
                                 setState(() => _loading = true);
                                 try {
                                   await AuthService.instance.signIn(email: email, password: password);
+                                  // Mulai listener notifikasi segera setelah login
+                                  final uid = AuthService.instance.currentUser?.uid;
+                                  if (uid != null) {
+                                    await MatchesNotificationService.instance.startListening(uid);
+                                    await ChatNotificationService.instance.startListening(uid);
+                                  }
                                   if (context.mounted) {
                                     Navigator.pushReplacement(
                                       context,
